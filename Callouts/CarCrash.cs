@@ -17,9 +17,11 @@ namespace SSStuart_Callouts.Callouts
     {
         private Ped Driver;
         private Vehicle CrashedVehicle;
+        private Blip CrashedVehicleBlip;
         private Blip DriverBlip;
         private LHandle EventHandle;
         private Vector3 SpawnPoint;
+        private bool DriverMarked;
         private bool EventCreated;
 
         public override bool OnBeforeCalloutDisplayed()
@@ -58,7 +60,7 @@ namespace SSStuart_Callouts.Callouts
             CrashedVehicle = new Vehicle(vehicleList[new Random().Next(vehicleList.Count)], SpawnPoint);
             CrashedVehicle.IsPersistent = true;
 
-            Driver = new Ped(CrashedVehicle.GetOffsetPositionFront(new Random().Next(2,6)));
+            Driver = new Ped(CrashedVehicle.GetOffsetPositionFront(new Random().Next(4,8)));
             Driver.IsPersistent = true;
             Driver.BlockPermanentEvents = true;
             if (new Random().Next(0, 2) == 1)
@@ -66,11 +68,12 @@ namespace SSStuart_Callouts.Callouts
                 Driver.WarpIntoVehicle(CrashedVehicle, -1);
             }
 
-            DriverBlip = Driver.AttachBlip();
-            DriverBlip.Color = System.Drawing.Color.Orange;
-            DriverBlip.IsRouteEnabled = true;
+            CrashedVehicleBlip = CrashedVehicle.AttachBlip();
+            CrashedVehicleBlip.Color = System.Drawing.Color.Orange;
+            CrashedVehicleBlip.IsRouteEnabled = true;
 
             EventCreated = false;
+            DriverMarked = false;
 
             return base.OnCalloutAccepted();
         }
@@ -81,19 +84,43 @@ namespace SSStuart_Callouts.Callouts
 
             if (!EventCreated && Game.LocalPlayer.Character.DistanceTo(CrashedVehicle) < 200f)
             {
-                CrashedVehicle.Position = new Vector3(CrashedVehicle.Position.X, CrashedVehicle.Position.Y, CrashedVehicle.Position.Z + 20f);
-                CrashedVehicle.SetRotationRoll(180f);
                 CrashedVehicle.EngineHealth = 0f;
-                CrashedVehicle.IsEngineOn = false;
                 CrashedVehicle.IsDriveable = false;
-                CrashedVehicle.IndicatorLightsStatus = VehicleIndicatorLightsStatus.Both;
+                CrashedVehicle.IndicatorLightsStatus = VehicleIndicatorLightsStatus.RightOnly;
 
                 Driver.Health = new Random().Next(100, 200);
+
+                if(Driver.IsInVehicle(CrashedVehicle, true) && Driver.IsAlive)
+                    Driver.WillGetOutOfUpsideDownVehiclesAutomatically = true;
 
                 EventCreated = true;
             }
 
-            if (EventCreated && (Game.LocalPlayer.Character.DistanceTo(Driver) > 800f || Game.LocalPlayer.Character.DistanceTo(CrashedVehicle) > 800f))
+            if (EventCreated && !DriverMarked && Game.LocalPlayer.Character.DistanceTo(CrashedVehicle) < 20f)
+            {
+                CrashedVehicle.ApplyForce(new Vector3(0,0,10), new Vector3(0,0,0), false, true);
+
+                CrashedVehicleBlip.IsRouteEnabled = false;
+
+                DriverBlip = Driver.AttachBlip();
+                DriverBlip.Order = 2;
+                DriverBlip.Color = System.Drawing.Color.LightBlue;
+                DriverBlip.IsRouteEnabled = true;
+
+                CrashedVehicleBlip.Color = System.Drawing.Color.Orange;
+                CrashedVehicleBlip.Order = 1;
+                CrashedVehicleBlip.IsRouteEnabled = true;
+
+                DriverMarked = true;
+            }
+
+            if (EventCreated && Driver.IsDead)
+            {
+                Game.DisplayNotification("The driver is dead. Code 4");
+
+                End();
+            }
+            else if (EventCreated && Game.LocalPlayer.Character.DistanceTo(Driver) > 800f)
             {
                 End();
             }
@@ -104,6 +131,7 @@ namespace SSStuart_Callouts.Callouts
             base.End();
 
             if (Driver.Exists()) Driver.Dismiss();
+            if (CrashedVehicleBlip.Exists()) CrashedVehicleBlip.Delete();
             if (DriverBlip.Exists()) DriverBlip.Delete();
             if (CrashedVehicle.Exists()) CrashedVehicle.Dismiss();
 

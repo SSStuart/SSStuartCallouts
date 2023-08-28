@@ -57,7 +57,7 @@ namespace SSStuart_Callouts
         //This is the method that we called earlier in private static void OnOnDutyStateChangedHandler. This registers the callouts we have it setup to register, we'll come back to this after we make our callout.
         private static void RegisterCallouts()
         {
-            Functions.RegisterCallout(typeof(Callouts.TestCallout));
+            // Functions.RegisterCallout(typeof(Callouts.TestCallout));
             Functions.RegisterCallout(typeof(Callouts.CarCrash));
         }
 
