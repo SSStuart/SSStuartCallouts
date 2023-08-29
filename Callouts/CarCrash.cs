@@ -60,16 +60,17 @@ namespace SSStuart_Callouts.Callouts
             CrashedVehicle = new Vehicle(vehicleList[new Random().Next(vehicleList.Count)], SpawnPoint);
             CrashedVehicle.IsPersistent = true;
 
-            Driver = new Ped(CrashedVehicle.GetOffsetPositionFront(new Random().Next(4,8)));
+            Driver = new Ped(CrashedVehicle.GetOffsetPositionRight(5f));
             Driver.IsPersistent = true;
             Driver.BlockPermanentEvents = true;
-            if (new Random().Next(0, 2) == 1)
-            {
-                Driver.WarpIntoVehicle(CrashedVehicle, -1);
-            }
+            Driver.WarpIntoVehicle(CrashedVehicle, -1);
+            Driver.Health = new Random().Next(50, 200);
 
             CrashedVehicleBlip = CrashedVehicle.AttachBlip();
             CrashedVehicleBlip.Color = System.Drawing.Color.Orange;
+            CrashedVehicleBlip.Scale = 5f;
+            CrashedVehicleBlip.Alpha = 0.5f;
+            CrashedVehicleBlip.Name = "Crashed Vehicle";
             CrashedVehicleBlip.IsRouteEnabled = true;
 
             EventCreated = false;
@@ -84,43 +85,48 @@ namespace SSStuart_Callouts.Callouts
 
             if (!EventCreated && Game.LocalPlayer.Character.DistanceTo(CrashedVehicle) < 200f)
             {
-                CrashedVehicle.EngineHealth = 0f;
+                Game.DisplayNotification("[200]");
+
+                CrashedVehicle.EngineHealth = 10f;
                 CrashedVehicle.IsDriveable = false;
                 CrashedVehicle.IndicatorLightsStatus = VehicleIndicatorLightsStatus.RightOnly;
-
-                Driver.Health = new Random().Next(100, 200);
-
-                if(Driver.IsInVehicle(CrashedVehicle, true) && Driver.IsAlive)
-                    Driver.WillGetOutOfUpsideDownVehiclesAutomatically = true;
 
                 EventCreated = true;
             }
 
             if (EventCreated && !DriverMarked && Game.LocalPlayer.Character.DistanceTo(CrashedVehicle) < 20f)
             {
-                CrashedVehicle.ApplyForce(new Vector3(0,0,10), new Vector3(0,0,0), false, true);
+                Game.DisplayNotification("[20]");
 
+                Game.LogTrivial("Velocity applied to vehicle.");
+                CrashedVehicle.Velocity = new Vector3(10, 20, 0);
+                CrashedVehicleBlip.Order = 1;
                 CrashedVehicleBlip.IsRouteEnabled = false;
+
+                GameFiber.Wait(5000);
+                if (Driver.IsAlive)
+                {
+                    Driver.Tasks.LeaveVehicle(CrashedVehicle, LeaveVehicleFlags.LeaveDoorOpen).WaitForCompletion();
+                    Driver.Tasks.GoStraightToPosition(CrashedVehicle.GetOffsetPositionFront(-10), 2f, 0, 0, 10000).WaitForCompletion();
+                }
 
                 DriverBlip = Driver.AttachBlip();
                 DriverBlip.Order = 2;
-                DriverBlip.Color = System.Drawing.Color.LightBlue;
+                DriverBlip.Scale = 0.8f;
+                DriverBlip.Color = System.Drawing.Color.LightSkyBlue;
                 DriverBlip.IsRouteEnabled = true;
-
-                CrashedVehicleBlip.Color = System.Drawing.Color.Orange;
-                CrashedVehicleBlip.Order = 1;
-                CrashedVehicleBlip.IsRouteEnabled = true;
 
                 DriverMarked = true;
             }
 
+
             if (EventCreated && Driver.IsDead)
             {
-                Game.DisplayNotification("The driver is dead. Code 4");
+                Game.DisplayNotification("The driver is dead.");
 
                 End();
             }
-            else if (EventCreated && Game.LocalPlayer.Character.DistanceTo(Driver) > 800f)
+            else if (EventCreated && (Game.LocalPlayer.Character.DistanceTo(Driver) > 600f || !Driver.Exists()))
             {
                 End();
             }
@@ -130,11 +136,12 @@ namespace SSStuart_Callouts.Callouts
         {
             base.End();
 
+            if (DriverBlip.Exists()) DriverBlip.Delete();
             if (Driver.Exists()) Driver.Dismiss();
             if (CrashedVehicleBlip.Exists()) CrashedVehicleBlip.Delete();
-            if (DriverBlip.Exists()) DriverBlip.Delete();
             if (CrashedVehicle.Exists()) CrashedVehicle.Dismiss();
 
+            Game.DisplayNotification("[CALLOUT 'CAR CRASH' ENDED]");
             Game.LogTrivial("[SSStuart Callout] 'Car crash' callout has ended.");
         }
     }
