@@ -4,7 +4,7 @@ Callouts for LSPDFR
 
 ---
 ## `🚓` List of available callouts
-- Car crash 🚗
+- Car crash 🚗💥
 - (+3 others callouts ideas)
 
 ## `🧪` Testing team
