@@ -2,7 +2,7 @@
 
 Callouts for LSPDFR
 
-## List od available callouts
+## List of available callouts
 - Car crash 🚗
 
 ## Testing team 🧑‍🔬
