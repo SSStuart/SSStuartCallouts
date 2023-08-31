@@ -8,7 +8,3 @@ Callouts for LSPDFR
 - Train derailment
 
 (2 others callouts ideas)
-
-## `🧪` Testing team
-- skittle7279
-- .mel34
