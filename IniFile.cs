@@ -2,7 +2,7 @@
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace SSStuart_Callouts
+namespace SSStuartCallouts
 {
     /// <summary>
     /// Create a New INI file to store or load data

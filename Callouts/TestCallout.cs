@@ -8,7 +8,7 @@ using LSPD_First_Response.Mod.API;
 using LSPD_First_Response.Mod.Callouts;
 
 
-namespace SSStuart_Callouts.Callouts
+namespace SSStuartCallouts.Callouts
 {
 
     [CalloutInfo("TestCallout", CalloutProbability.High)]
