@@ -7,4 +7,7 @@ Callouts for LSPDFR
 - Car crash 🚗💥
 - Train derailment
 
-(2 others callouts ideas)
+(Two other callouts ideas)
+
+## Recommendations
+[Stop The Ped](https://www.bejoijo.com/post/stop-the-ped) & [Ultimate Backup](https://www.bejoijo.com/post/ultimate-backup) are recommended
