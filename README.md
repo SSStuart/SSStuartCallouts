@@ -1,6 +1,7 @@
-# SSStuartCallouts
+# SSStuart Callouts
 
-Callouts for LSPDFR
+![](cover.jpeg)
+**_Callouts for LSPDFR_**
 
 ---
 ## `🚓` List of available callouts
