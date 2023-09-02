@@ -40,8 +40,7 @@ namespace SSStuartCallouts
             if (OnDuty)
             {
                 RegisterCallouts();
-                //Game.DisplayNotification("~y~SSStuart Callouts~w~ has loaded successfully !");
-                Game.DisplayNotification("commonmenu", "mp_hostcrown", "SSStuart Callout", "V 0.1", "~g~Loaded successfully !");
+                Game.DisplayNotification("commonmenu", "mp_hostcrown", "SSStuart Callout", "V 0.1.1", "~g~Loaded successfully !");
             }
         }
         
@@ -50,6 +49,7 @@ namespace SSStuartCallouts
             // Functions.RegisterCallout(typeof(Callouts.TestCallout));
             Functions.RegisterCallout(typeof(Callouts.CarCrash));
             Functions.RegisterCallout(typeof(Callouts.TrainDerailment));
+            Functions.RegisterCallout(typeof(Callouts.AbandonedVehicle));
         }
 
         public static Assembly LSPDFRResolveEventHandler(object sender, ResolveEventArgs args)

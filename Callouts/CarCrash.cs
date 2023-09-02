@@ -10,7 +10,7 @@ using LSPD_First_Response.Mod.Callouts;
 namespace SSStuartCallouts.Callouts
 {
 
-    [CalloutInfo("CarCrash", CalloutProbability.High)]
+    [CalloutInfo("CarCrash", CalloutProbability.Medium)]
 
     public class CarCrash: Callout
     {
@@ -32,13 +32,9 @@ namespace SSStuartCallouts.Callouts
 
         public override bool OnBeforeCalloutDisplayed()
         {
-            SpawnPoint = World.GetRandomPositionOnStreet();
-            while (SpawnPoint.Z < 0)
-            {
-                SpawnPoint = World.GetRandomPositionOnStreet();
-            }
+            SpawnPoint = World.GetNextPositionOnStreet(Game.LocalPlayer.Character.Position.Around(2500f));
             ShowCalloutAreaBlipBeforeAccepting(SpawnPoint, 30f);
-            AddMinimumDistanceCheck(5f, SpawnPoint);
+            AddMinimumDistanceCheck(300f, SpawnPoint);
             CalloutMessage = "Car Crash";
             CalloutPosition = SpawnPoint;
             Functions.PlayScannerAudioUsingPosition("WE_HAVE CRIME_MOTOR_VEHICLE_ACCIDENT_01 IN_OR_ON_POSITION", SpawnPoint);
@@ -196,8 +192,11 @@ namespace SSStuartCallouts.Callouts
 
             if (EventBlip.Exists()) EventBlip.Delete();
             if (DriverBlip.Exists()) DriverBlip.Delete();
-            if (Driver.Exists()) Driver.Dismiss();
-            if (Driver.Tasks != null) Driver.Tasks.Clear();
+            if (Driver.Exists())
+            {
+                if (Driver.Tasks != null) Driver.Tasks.Clear();
+                Driver.Dismiss();
+            }
             if (CrashedVehicleBlip.Exists()) CrashedVehicleBlip.Delete();
             if (CrashedVehicle.Exists()) CrashedVehicle.Dismiss();
 

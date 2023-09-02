@@ -50,6 +50,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Callouts\AbandonedVehicle.cs" />
     <Compile Include="Callouts\CarCrash.cs" />
     <Compile Include="Callouts\TestCallout.cs" />
     <Compile Include="Callouts\TrainDerailment.cs" />
