@@ -32,6 +32,10 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="CalloutInterfaceAPI, Version=1.0.3.0, Culture=neutral, processorArchitecture=AMD64">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>bin\Debug\CalloutInterfaceAPI.dll</HintPath>
+    </Reference>
     <Reference Include="LSPD First Response">
       <HintPath>References\LSPD First Response.dll</HintPath>
     </Reference>
@@ -51,18 +55,21 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Callouts\AbandonedVehicle.cs" />
+    <Compile Include="Callouts\AttackedTransport.cs" />
     <Compile Include="Callouts\CarCrash.cs" />
+    <Compile Include="Callouts\SniperShots.cs" />
     <Compile Include="Callouts\TestCallout.cs" />
     <Compile Include="Callouts\TrainDerailment.cs" />
-    <Compile Include="IniFile.cs" />
     <Compile Include="Main.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="UpdateChecker.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Notes.md" />
+    <None Include="README.md" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>call C:\Users\SSStuart\source\repos\SSStuartCallouts\bin\Debug\Z-[moveToPluginsFolder].bat</PostBuildEvent>
+  </PropertyGroup>
 </Project>

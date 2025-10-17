@@ -1,38 +1,34 @@
-﻿using LSPD_First_Response;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System;
 using Rage;
-using Rage.Native;
 using LSPD_First_Response.Mod.API;
-using LSPD_First_Response.Mod.Callouts;
-using LSPD_First_Response.Engine.Scripting.Entities;
-using SSStuartCallouts;
-using SSStuartCallouts.Callouts;
 using System.Reflection;
+using System.Drawing;
 
 namespace SSStuartCallouts
 {
-
     public class Main : Plugin
     {
-        readonly string pluginName = "SSStuart Callouts";
+        public static string pluginName = "SSStuart Callouts";
+        public static string pluginVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
+
+        public static Color calloutWaypointColor = Color.Orange;
 
         //Initialization of the plugin.
         public override void Initialize()
         {
             Functions.OnOnDutyStateChanged += OnOnDutyStateChangedHandler;
- 
-            Game.LogTrivial(pluginName + " Plugin " + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString() + " has been initialised.");
-            Game.LogTrivial("Go on duty to fully load " + pluginName + ".");
+
+            Game.LogTrivial($"{pluginName} Plugin v{pluginVersion} has been initialised.");
+            Game.LogTrivial($"Go on duty to fully load {pluginName}.");
+
+            UpdateChecker.CheckForUpdates();
 
             AppDomain.CurrentDomain.AssemblyResolve += new ResolveEventHandler(LSPDFRResolveEventHandler);
         }
         
         public override void Finally()
         {
-            Game.LogTrivial(pluginName + " has been cleaned up.");
+            Game.LogTrivial($"{pluginName} has been cleaned up.");
         }
         
         private static void OnOnDutyStateChangedHandler(bool OnDuty)
@@ -40,7 +36,7 @@ namespace SSStuartCallouts
             if (OnDuty)
             {
                 RegisterCallouts();
-                Game.DisplayNotification("commonmenu", "mp_hostcrown", "SSStuart Callout", "V 0.1.1", "~g~Loaded successfully !");
+                Game.DisplayNotification("commonmenu", "mp_hostcrown", pluginName, $"V {pluginVersion}", "~g~Loaded successfully !");
             }
         }
         

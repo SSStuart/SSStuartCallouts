@@ -1,7 +1,8 @@
 # SSStuart Callouts
 
 ![](cover.jpeg)
-**_Callouts for LSPDFR_**
+**_Callouts for LSPDFR_**  
+⚠ **Still under development**
 
 ---
 ## `🚓` List of available callouts
@@ -12,12 +13,10 @@
 (Two other callouts ideas)
 
 ## `ℹ` Recommendations
-[Stop The Ped](https://www.bejoijo.com/post/stop-the-ped) & [Ultimate Backup](https://www.bejoijo.com/post/ultimate-backup) are recommended
+- [Policing Redefined](https://www.lcpdfr.com/downloads/gta5mods/scripts/52191-policing-redefined) is recommended for the interactions. (or [Stop The Ped](https://www.bejoijo.com/post/stop-the-ped) & [Ultimate Backup](https://www.bejoijo.com/post/ultimate-backup))
+- Compatible with [CalloutInterface](https://www.lcpdfr.com/downloads/gta5mods/scripts/37828-callout-interface/).
 
 ## `⚠` Known issues
-> ### Train Derailment
-> - Trains can still spawn on the tracks (but are invisible & without collision), you can hear them passing by
->
-> ### Abandoned Vehicle
-> - The backup helicopter doesn't seem to work
-> - The colleague who picks you up doesn't always stay in the vehicle
+### Abandoned Vehicle
+- [ ] The backup helicopter doesn't seem to work
+- [ ] The colleague who picks you up doesn't always stay in the vehicle
