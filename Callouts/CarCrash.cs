@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Rage;
 using LSPD_First_Response.Mod.API;
 using LSPD_First_Response.Mod.Callouts;
@@ -10,10 +7,12 @@ using LSPD_First_Response.Mod.Callouts;
 namespace SSStuartCallouts.Callouts
 {
 
-    [CalloutInfo("CarCrash", CalloutProbability.Medium)]
-
+    [CalloutInterfaceAPI.CalloutInterface("Car Crash", CalloutProbability.Medium, "Vehicle accident reported", "Code 3")]
     public class CarCrash: Callout
     {
+        public static string pluginName = Main.pluginName;
+        public static string pluginVersion = Main.pluginVersion;
+
         private Ped Driver;
         private Vehicle CrashedVehicle;
         private Blip EventBlip;
@@ -22,6 +21,7 @@ namespace SSStuartCallouts.Callouts
         private Vector3 SpawnPoint;
         private bool DriverMarked;
         private bool EventCreated;
+        private bool EndCalloutDisplayed;
 
         public int RandomNumber(int min, int max)
         {
@@ -32,7 +32,7 @@ namespace SSStuartCallouts.Callouts
 
         public override bool OnBeforeCalloutDisplayed()
         {
-            SpawnPoint = World.GetNextPositionOnStreet(Game.LocalPlayer.Character.Position.Around(2500f));
+            SpawnPoint = World.GetNextPositionOnStreet(Game.LocalPlayer.Character.Position.Around(800f));
             ShowCalloutAreaBlipBeforeAccepting(SpawnPoint, 30f);
             AddMinimumDistanceCheck(300f, SpawnPoint);
             CalloutMessage = "Car Crash";
@@ -63,7 +63,7 @@ namespace SSStuartCallouts.Callouts
                 "benson"
             };
 
-            CrashedVehicle = new Vehicle(vehicleList[RandomNumber(0, vehicleList.Count)], SpawnPoint, RandomNumber(-180, 180));
+            CrashedVehicle = new Vehicle(vehicleList[RandomNumber(0, vehicleList.Count)], SpawnPoint.Around(4f, 8f), RandomNumber(-180, 180));
             CrashedVehicle.IsPersistent = true;
 
             if (CrashedVehicle.Model.IsBus)
@@ -78,12 +78,13 @@ namespace SSStuartCallouts.Callouts
             Driver.Health = RandomNumber(100, 200);
 
             EventBlip = new Blip(SpawnPoint);
-            EventBlip.Color = System.Drawing.Color.Orange;
+            EventBlip.Color = Main.calloutWaypointColor;
             EventBlip.IsRouteEnabled = true;
             EventBlip.Name = "Car Crash";
 
             EventCreated = false;
             DriverMarked = false;
+            EndCalloutDisplayed = false;
 
             return base.OnCalloutAccepted();
         }
@@ -95,6 +96,7 @@ namespace SSStuartCallouts.Callouts
             if (!EventCreated && Game.LocalPlayer.Character.DistanceTo(CrashedVehicle) < 300f)
             {
                 Game.DisplayNotification("The involved vehicle is a ~o~" + CrashedVehicle.Model.Name);
+                CalloutInterfaceAPI.Functions.SendMessage(this, "The involved vehicle is a " + CrashedVehicle.Model.Name);
 
                 CrashedVehicle.EngineHealth = RandomNumber(0, 100);
                 CrashedVehicle.IsDriveable = false;
@@ -112,41 +114,39 @@ namespace SSStuartCallouts.Callouts
 
                 if (Driver.IsAlive)
                 {
-                    Game.LogTrivial("[SSStuart Callout] Driver is alive");
+                    Game.LogTrivial($"[{pluginName}] Driver is alive");
                     Driver.Tasks.LeaveVehicle(CrashedVehicle, LeaveVehicleFlags.LeaveDoorOpen).WaitForCompletion();
                     EventBlip.Delete();
                     CrashedVehicleBlip = CrashedVehicle.AttachBlip();
-                    CrashedVehicleBlip.RouteColor = System.Drawing.Color.Orange;
+                    CrashedVehicleBlip.RouteColor = Main.calloutWaypointColor;
                     CrashedVehicleBlip.Sprite = BlipSprite.VehicleDeathmatch;
                     CrashedVehicleBlip.Name = "Crashed Vehicle";
                     CrashedVehicleBlip.IsRouteEnabled = true;
                     CrashedVehicleBlip.Order = 1;
                     if (CrashedVehicle.IsOnFire)
                     {
-                        Game.LogTrivial("[SSStuart Callout] Vehicle on fire");
+                        Game.LogTrivial($"[{pluginName}] Vehicle on fire");
                         if (RandomNumber(0, 2) == 1)
                         {
-                            Game.LogTrivial("[SSStuart Callout] Driver set on fire");
+                            Game.LogTrivial($"[{pluginName}] Driver set on fire");
                             Driver.IsOnFire = true;
                         }
                         else
                         {
-                            Game.LogTrivial("[SSStuart Callout] Driver fleeing");
-                            Driver.Tasks.ReactAndFlee(Game.LocalPlayer.Character);
-                            GameFiber.Wait(5000);
+                            Game.LogTrivial($"[{pluginName}] Driver fleeing");
+                            Driver.Tasks.ReactAndFlee(Game.LocalPlayer.Character).WaitForCompletion(10000);
                         }
                     } else
                     {
                         if (RandomNumber(0, 2) == 1)
                         {
-                            Game.LogTrivial("[SSStuart Callout] Driver ragdolling");
+                            Game.LogTrivial($"[{pluginName}] Driver ragdolling");
                             Driver.IsRagdoll = true;
                         }
                         else
                         {
-                            Game.LogTrivial("[SSStuart Callout] Driver walking away");
-                            Driver.Tasks.Wander();
-                            GameFiber.Wait(3000);
+                            Game.LogTrivial($"[{pluginName}] Driver walking away");
+                            Driver.Tasks.Wander().WaitForCompletion(5000);
                         }
                     }
                     Driver.Tasks.Clear();
@@ -157,7 +157,7 @@ namespace SSStuartCallouts.Callouts
 
             if (EventCreated && !DriverMarked && (Game.LocalPlayer.Character.DistanceTo(CrashedVehicle) < 20f || Game.LocalPlayer.Character.DistanceTo(Driver) < 20f))
             {
-                Game.DisplayNotification("Inspect the driver");
+                Game.DisplayHelp("Inspect the driver");
 
                 DriverBlip = Driver.AttachBlip();
                 DriverBlip.Order = 2;
@@ -169,16 +169,24 @@ namespace SSStuartCallouts.Callouts
                 DriverMarked = true;
             }
 
-            if (EventCreated && DriverMarked && Driver.IsRagdoll && Game.LocalPlayer.Character.DistanceTo(Driver) < 3f)
-                Game.DisplaySubtitle("The driver seems to be ~y~unconscious");
-
-
-            if (EventCreated && Driver.IsDead)
+            if (Game.LocalPlayer.Character.DistanceTo(Driver) < 3f)
             {
-                Game.DisplayNotification("The driver is dead.");
-                Game.DisplayHelp("Press ~b~End~w~ to end the callout.");
+                if (DriverBlip.Exists())
+                    DriverBlip.Delete();
             }
-            else if (EventCreated && (Game.LocalPlayer.Character.DistanceTo(Driver) > 500f || !Driver.Exists() || Game.LocalPlayer.Character.DistanceTo(CrashedVehicle) > 500f))
+            if (EventCreated && DriverMarked && Driver.IsRagdoll && Game.LocalPlayer.Character.DistanceTo(Driver) < 3f)
+            {
+                Game.DisplaySubtitle("The driver seems to be ~y~unconscious");
+            }
+
+
+            if (EventCreated && !EndCalloutDisplayed && Driver.IsDead)
+            {
+                Game.DisplayNotification("The driver has died.");
+                Game.DisplayHelp("Press ~b~End~w~ to end the callout.");
+                EndCalloutDisplayed = true;
+            }
+            else if (EventCreated && (Game.LocalPlayer.Character.DistanceTo(Driver) > 300f || !Driver.Exists() || Game.LocalPlayer.Character.DistanceTo(CrashedVehicle) > 300f))
             {
                 End();
             }
@@ -201,7 +209,7 @@ namespace SSStuartCallouts.Callouts
             if (CrashedVehicle.Exists()) CrashedVehicle.Dismiss();
 
             Game.DisplayNotification("[CALLOUT 'CAR CRASH' ENDED]");
-            Game.LogTrivial("[SSStuart Callout] 'Car crash' callout has ended.");
+            Game.LogTrivial($"[{pluginName}] 'Car crash' callout has ended.");
         }
     }
 }

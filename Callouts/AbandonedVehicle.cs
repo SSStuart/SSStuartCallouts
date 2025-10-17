@@ -1,20 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Rage;
 using LSPD_First_Response.Mod.API;
 using LSPD_First_Response.Mod.Callouts;
-using System.Windows.Forms.VisualStyles;
 
 namespace SSStuartCallouts.Callouts
 {
 
-    [CalloutInfo("AbandonedVehicle", CalloutProbability.Low)]
-
+    [CalloutInterfaceAPI.CalloutInterface("Abandoned Vehicle", CalloutProbability.Low, "Reports of an abandoned vehicle on the roadway", "Code 3")]
     public class AbandonedVehicle: Callout
     {
+        public static string pluginName = Main.pluginName;
+        public static string pluginVersion = Main.pluginVersion;
+
         private Ped Driver;
         private Vehicle AbandonedCar;
         private Blip AbandonedCarBlip;
@@ -30,14 +28,13 @@ namespace SSStuartCallouts.Callouts
 
         public int RandomNumber(int min, int max)
         {
-            int random = new Random().Next(min, max);
-            return random;
+            return new Random().Next(min, max);
         }
 
 
         public override bool OnBeforeCalloutDisplayed()
         {
-            SpawnPoint = World.GetNextPositionOnStreet(Game.LocalPlayer.Character.Position.Around(2000f));
+            SpawnPoint = World.GetNextPositionOnStreet(Game.LocalPlayer.Character.Position.Around(800f));
             ShowCalloutAreaBlipBeforeAccepting(SpawnPoint, 50f);
             AddMinimumDistanceCheck(200f, SpawnPoint);
             CalloutMessage = "Abandoned Vehicle";
@@ -61,18 +58,24 @@ namespace SSStuartCallouts.Callouts
                 "voodoo2"
             };
 
-            AbandonedCar = new Vehicle(vehicleList[RandomNumber(0, vehicleList.Count)], SpawnPoint, RandomNumber(-180, 180));
+            AbandonedCar = new Vehicle(vehicleList[RandomNumber(0, vehicleList.Count)], SpawnPoint.Around(5f, 8f), RandomNumber(-180, 180));
             AbandonedCar.IsPersistent = true;
 
-            Driver = new Ped(AbandonedCar.GetOffsetPositionRight(5f));
-            Driver.IsPersistent = true;
-            Driver.BlockPermanentEvents = true;
-            Driver.IsVisible = false;
+            Driver = new Ped(AbandonedCar.GetOffsetPositionRight(5f))
+            {
+                IsPersistent = true,
+                BlockPermanentEvents = true,
+                IsVisible = false,
+                IsCollisionEnabled = false,
+                IsPositionFrozen = true
+            };
 
-            AbandonedCarBlip = new Blip(AbandonedCar);
-            AbandonedCarBlip.Color = System.Drawing.Color.Orange;
-            AbandonedCarBlip.IsRouteEnabled = true;
-            AbandonedCarBlip.Name = "Abandoned Vehicle";
+            AbandonedCarBlip = new Blip(AbandonedCar)
+            {
+                Color = Main.calloutWaypointColor,
+                IsRouteEnabled = true,
+                Name = "Abandoned Vehicle"
+            };
 
             EventCreated = false;
             PursuitCreated = false;
@@ -87,7 +90,8 @@ namespace SSStuartCallouts.Callouts
 
             if (!EventCreated && Game.LocalPlayer.Character.DistanceTo(AbandonedCar) < 300f)
             {
-                Game.DisplayNotification("The abandoned vehicle is a ~o~" + AbandonedCar.Model.Name);
+                Game.DisplayNotification($"The abandoned vehicle is a ~o~{AbandonedCar.Model.Name}");
+                CalloutInterfaceAPI.Functions.SendMessage(this, $"The abandoned vehicle is a {AbandonedCar.Model.Name}");
 
                 AbandonedCar.IsEngineOn = true;
                 AbandonedCar.IndicatorLightsStatus = VehicleIndicatorLightsStatus.Both;
@@ -95,7 +99,6 @@ namespace SSStuartCallouts.Callouts
                     AbandonedCar.Doors[0].IsFullyOpen = true;
 
                 EventCreated = true;
-
             }
 
             if (EventCreated && !VehicleStolen && Game.LocalPlayer.Character.IsInAnyVehicle(false))
@@ -120,6 +123,8 @@ namespace SSStuartCallouts.Callouts
 
                     if (VehicleStolen)
                     {
+                        Driver.IsPositionFrozen = false;
+                        Driver.IsCollisionEnabled = true;
                         Driver.Position = PlayerVehicle.GetOffsetPositionRight(-2f);
                         Driver.IsVisible = true;
                         Driver.BlockPermanentEvents = true;
@@ -129,26 +134,36 @@ namespace SSStuartCallouts.Callouts
                         Game.LogTrivial("Assinging task to drive away");
                         Driver.Tasks.CruiseWithVehicle(100f);
 
+                        if (AbandonedCarBlip != null && AbandonedCarBlip.Exists())
+                            AbandonedCarBlip.Delete();
+
                         Pursuit = Functions.CreatePursuit();
                         Functions.AddPedToPursuit(Pursuit, Driver);
                         Functions.RequestBackup(World.GetNextPositionOnStreet(Driver.Position.Around(100f)), LSPD_First_Response.EBackupResponseType.Pursuit, LSPD_First_Response.EBackupUnitType.AirUnit);
                         Functions.SetPursuitIsActiveForPlayer(Pursuit, true);
 
                         GameFiber.Wait(1500);
+                        CalloutInterfaceAPI.Functions.SendMessage(this, "The unit's vehicle has been stolen, pursuit initiated.");
                         Game.DisplayNotification("dia_police", "dia_police", "Dispatch", "", "Calling for backup to pick you up");
                         Functions.PlayScannerAudioUsingPosition("WE_HAVE CRIME_GRAND_THEFT_AUTO OUTRO_03 ASSISTANCE_REQUIRED IN_OR_ON_POSITION", Driver.Position);
 
-                        BackupVehicle = new Vehicle("police", World.GetNextPositionOnStreet(Game.LocalPlayer.Character.Position.Around(200f)), Game.LocalPlayer.Character.Heading);
-                        BackupVehicle.IsSirenOn = true;
-                        BackupVehicle.IsPersistent = true;
+                        BackupVehicle = new Vehicle("police", World.GetNextPositionOnStreet(Game.LocalPlayer.Character.Position.Around(100f)), Game.LocalPlayer.Character.Heading)
+                        {
+                            IsSirenOn = true,
+                            IsPersistent = true
+                        };
 
-                        BackupPed = new Ped("s_m_m_chemsec_01", BackupVehicle.GetOffsetPositionRight(2f), BackupVehicle.Heading);
-                        BackupPed.BlockPermanentEvents = true;
-                        BackupPed.IsPersistent = true;
+                        BackupPed = new Ped("s_m_m_chemsec_01", BackupVehicle.GetOffsetPositionRight(2f), BackupVehicle.Heading)
+                        {
+                            BlockPermanentEvents = true,
+                            IsPersistent = true
+                        };
 
-                        BackupBlip = new Blip(BackupPed);
-                        BackupBlip.Sprite = BlipSprite.PolicePatrol;
-                        BackupBlip.Color = System.Drawing.Color.LightSkyBlue;
+                        BackupBlip = new Blip(BackupPed)
+                        {
+                            Sprite = BlipSprite.PolicePatrol,
+                            Color = System.Drawing.Color.LightSkyBlue
+                        };
 
                         BackupPed.WarpIntoVehicle(BackupVehicle, -1);
                         Game.LogTrivial("Task : Drive to player");
@@ -156,10 +171,9 @@ namespace SSStuartCallouts.Callouts
                         while (BackupVehicle.DistanceTo(Game.LocalPlayer.Character) > 20f)
                         {
                             Game.LogTrivial("Distance to player > 20m");
-                            GameFiber.Wait(2000);
-                            BackupPed.Tasks.Clear();
                             Game.LogTrivial("Task : Drive to player");
                             BackupPed.Tasks.DriveToPosition(Game.LocalPlayer.Character.Position, 80f, VehicleDrivingFlags.Emergency, 20f);
+                            GameFiber.Wait(2000);
                         }
 
                         while (BackupVehicle.Speed > 1f)
@@ -180,6 +194,11 @@ namespace SSStuartCallouts.Callouts
                         
                         BackupBlip.Delete();
                         BackupPed.Delete();
+                        uint backupTransformationTimeout = Game.GameTime;
+                        while (BackupVehicle.Speed < 5f && backupTransformationTimeout + 20000 > Game.GameTime)
+                        {
+                            GameFiber.Sleep(2000);
+                        }
                         BackupPed = new Ped("s_m_y_cop_01", BackupVehicle.GetOffsetPositionFront(-20f), 0);
                         BackupPed.WarpIntoVehicle(BackupVehicle, 0);
                         BackupPed.BlockPermanentEvents = false;
@@ -204,14 +223,17 @@ namespace SSStuartCallouts.Callouts
             if (AbandonedCar.Exists()) AbandonedCar.Dismiss();
             if (Driver.Exists()) Driver.Dismiss();
             if (Driver.Tasks != null) Driver.Tasks.Clear();
-            if (Game.LocalPlayer.Character.IsInVehicle(BackupVehicle, false))
+            if (BackupVehicle != null && BackupVehicle.Exists() && Game.LocalPlayer.Character.IsInVehicle(BackupVehicle, false))
             {
                 BackupPed.Tasks.PerformDrivingManeuver(VehicleManeuver.Wait).WaitForCompletion();
                 GameFiber.Wait(1000);
                 Game.LocalPlayer.Character.Tasks.LeaveVehicle(LeaveVehicleFlags.LeaveDoorOpen).WaitForCompletion();
                 GameFiber.Wait(1000);
-            }
-            if (BackupPed.Tasks != null) BackupPed.Tasks.Clear();
+            } else if (BackupVehicle != null && BackupVehicle.Exists() && BackupPed != null && BackupPed.Exists() && !BackupPed.IsInVehicle(BackupVehicle, false))
+            {
+                BackupPed.Tasks.EnterVehicle(BackupVehicle, -1).WaitForCompletion(10000);
+            } else if (BackupPed != null && BackupPed.Exists() && (BackupVehicle == null || !BackupVehicle.Exists()))
+                if (BackupPed.Tasks != null) BackupPed.Tasks.Clear();
             if (BackupBlip.Exists()) BackupBlip.Delete();
             if (BackupPed.Exists()) BackupPed.Dismiss();
             if (BackupVehicle.Exists()) BackupVehicle.Dismiss();
@@ -219,7 +241,7 @@ namespace SSStuartCallouts.Callouts
             if (Game.LocalPlayer.Character.Tasks != null) Game.LocalPlayer.Character.Tasks.Clear();
 
             Game.DisplayNotification("[CALLOUT 'ABANDONED VEHICLE' ENDED]");
-            Game.LogTrivial("[SSStuart Callout] 'Abandoned Vehicle' callout has ended.");
+            Game.LogTrivial($"[{pluginName}] 'Abandoned Vehicle' callout has ended.");
         }
     }
 }
