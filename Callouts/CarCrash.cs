@@ -77,10 +77,12 @@ namespace SSStuartCallouts.Callouts
             Driver.WarpIntoVehicle(CrashedVehicle, -1);
             Driver.Health = RandomNumber(100, 200);
 
-            EventBlip = new Blip(SpawnPoint);
-            EventBlip.Color = Main.calloutWaypointColor;
-            EventBlip.IsRouteEnabled = true;
-            EventBlip.Name = "Car Crash";
+            EventBlip = new Blip(SpawnPoint)
+            {
+                Color = Main.calloutWaypointColor,
+                IsRouteEnabled = true,
+                Name = "Car Crash"
+            };
 
             EventCreated = false;
             DriverMarked = false;
@@ -157,13 +159,13 @@ namespace SSStuartCallouts.Callouts
 
             if (EventCreated && !DriverMarked && (Game.LocalPlayer.Character.DistanceTo(CrashedVehicle) < 20f || Game.LocalPlayer.Character.DistanceTo(Driver) < 20f))
             {
-                Game.DisplayHelp("Inspect the driver");
+                Game.DisplayHelp("Inspect the ~o~driver~w~");
 
                 DriverBlip = Driver.AttachBlip();
                 DriverBlip.Order = 2;
-                DriverBlip.Scale = 0.8f;
+                DriverBlip.Scale = 0.75f;
                 DriverBlip.Name = "Driver";
-                DriverBlip.Color = System.Drawing.Color.LightSkyBlue;
+                DriverBlip.Color = System.Drawing.Color.Orange;
                 DriverBlip.IsRouteEnabled = true;
 
                 DriverMarked = true;
@@ -176,13 +178,13 @@ namespace SSStuartCallouts.Callouts
             }
             if (EventCreated && DriverMarked && Driver.IsRagdoll && Game.LocalPlayer.Character.DistanceTo(Driver) < 3f)
             {
-                Game.DisplaySubtitle("The driver seems to be ~y~unconscious");
+                Game.DisplaySubtitle("The ~o~driver~w~ seems to be unconscious");
             }
 
 
             if (EventCreated && !EndCalloutDisplayed && Driver.IsDead)
             {
-                Game.DisplayNotification("The driver has died.");
+                Game.DisplayNotification("The ~o~driver~w~ has died.");
                 Game.DisplayHelp("Press ~b~End~w~ to end the callout.");
                 EndCalloutDisplayed = true;
             }

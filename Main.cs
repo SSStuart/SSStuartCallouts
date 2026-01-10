@@ -11,14 +11,14 @@ namespace SSStuartCallouts
         public static string pluginName = "SSStuart Callouts";
         public static string pluginVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
 
-        public static Color calloutWaypointColor = Color.Orange;
+        public static Color calloutWaypointColor = Color.Yellow;
 
         //Initialization of the plugin.
         public override void Initialize()
         {
             Functions.OnOnDutyStateChanged += OnOnDutyStateChangedHandler;
 
-            Game.LogTrivial($"{pluginName} Plugin v{pluginVersion} has been initialised.");
+            Game.LogTrivial($"{pluginName} v{pluginVersion} has been initialised.");
             Game.LogTrivial($"Go on duty to fully load {pluginName}.");
 
             UpdateChecker.CheckForUpdates();

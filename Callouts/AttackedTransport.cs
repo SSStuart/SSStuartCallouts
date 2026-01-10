@@ -135,11 +135,13 @@ namespace SSStuartCallouts.Callouts
             TransportPassenger.BlockPermanentEvents = true;
             TransportPassenger.WarpIntoVehicle(TransportVehicle, 0);
 
-            EventBlip = new Blip(TransportVehicle);
-            EventBlip.Color = Main.calloutWaypointColor;
-            EventBlip.Sprite = BlipSprite.ArmoredVan;
-            EventBlip.IsRouteEnabled = true;
-            EventBlip.Name = "Attacked transport";
+            EventBlip = new Blip(TransportVehicle)
+            {
+                Color = Main.calloutWaypointColor,
+                Sprite = BlipSprite.ArmoredVan,
+                IsRouteEnabled = true,
+                Name = "Attacked transport"
+            };
 
             EventCreated = false;
             DriverOutOfTransport = false;

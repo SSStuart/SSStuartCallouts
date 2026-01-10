@@ -129,9 +129,9 @@ namespace SSStuartCallouts.Callouts
                         Driver.IsVisible = true;
                         Driver.BlockPermanentEvents = true;
 
-                        Game.LogTrivial("Warping thief into vehicle");
+                        Game.LogTrivial($"[{pluginName}] Warping thief into vehicle");
                         Driver.WarpIntoVehicle(PlayerVehicle, -1);
-                        Game.LogTrivial("Assinging task to drive away");
+                        Game.LogTrivial($"[{pluginName}] Assinging task to drive away");
                         Driver.Tasks.CruiseWithVehicle(100f);
 
                         if (AbandonedCarBlip != null && AbandonedCarBlip.Exists())
@@ -166,23 +166,23 @@ namespace SSStuartCallouts.Callouts
                         };
 
                         BackupPed.WarpIntoVehicle(BackupVehicle, -1);
-                        Game.LogTrivial("Task : Drive to player");
+                        Game.LogTrivial($"[{pluginName}] Task : Drive to player");
                         BackupPed.Tasks.DriveToPosition(Game.LocalPlayer.Character.Position, 100f, VehicleDrivingFlags.Emergency, 20f);
                         while (BackupVehicle.DistanceTo(Game.LocalPlayer.Character) > 20f)
                         {
-                            Game.LogTrivial("Distance to player > 20m");
-                            Game.LogTrivial("Task : Drive to player");
+                            Game.LogTrivial($"[{pluginName}] Distance to player > 20m");
+                            Game.LogTrivial($"[{pluginName}] Task : Drive to player");
                             BackupPed.Tasks.DriveToPosition(Game.LocalPlayer.Character.Position, 80f, VehicleDrivingFlags.Emergency, 20f);
                             GameFiber.Wait(2000);
                         }
 
                         while (BackupVehicle.Speed > 1f)
                             GameFiber.Wait(500);
-                        Game.LogTrivial("Speed < 1m/s   Task : Clear");
+                        Game.LogTrivial($"[{pluginName}] Speed < 1m/s   Task : Clear");
                         BackupPed.Tasks.Clear();
                         if (!Game.LocalPlayer.Character.IsInAnyVehicle(false))
                         {
-                            Game.DisplaySubtitle("Hey, get in the car!", 5000);
+                            Game.DisplaySubtitle("Hey, get in the ~b~car~w~!", 5000);
                             BackupPed.Tasks.ShuffleToAdjacentSeat();
                             BackupPed.IsPositionFrozen = true;
                             BackupPed.StaysInVehiclesWhenJacked = true;

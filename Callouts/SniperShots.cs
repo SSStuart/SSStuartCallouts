@@ -145,10 +145,12 @@ namespace SSStuartCallouts.Callouts
                 BackupPed.BlockPermanentEvents = true;
             }
 
-            WaypointBlip = new Blip(SpawnPoint, 50f);
-            WaypointBlip.Color = Main.calloutWaypointColor;
-            WaypointBlip.Alpha = 0.3f;
-            WaypointBlip.IsRouteEnabled = true;
+            WaypointBlip = new Blip(SpawnPoint, 50f)
+            {
+                Color = Main.calloutWaypointColor,
+                Alpha = 0.3f,
+                IsRouteEnabled = true
+            };
 
             SuspectShooting = false;
 
@@ -175,7 +177,7 @@ namespace SSStuartCallouts.Callouts
 
             if (Game.IsKeyDown(System.Windows.Forms.Keys.End) || !Suspect.Exists() || (Suspect.Exists() && (Suspect.IsDead || Functions.IsPedArrested(Suspect))))
             {
-                Game.LogTrivial($"Suspect Exist ? {Suspect.Exists()} | Is dead ? {Suspect.IsDead} | Is arrested ? {Functions.IsPedArrested(Suspect)}");
+                Game.LogTrivial($"[{pluginName}] Suspect Exist ? {Suspect.Exists()} | Is dead ? {Suspect.IsDead} | Is arrested ? {Functions.IsPedArrested(Suspect)}");
                 End();
             }
         }

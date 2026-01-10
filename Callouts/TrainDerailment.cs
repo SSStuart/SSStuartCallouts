@@ -57,12 +57,12 @@ namespace SSStuartCallouts.Callouts
             switch (RandomNumber(0,1))
             {
                 case 1:
-                    Game.LogTrivial("RNG = 1");
+                    Game.LogTrivial($"[{pluginName}] RNG = 1");
                     CalloutVersion = CalloutVariante.SanChiaski;
                     break;
                 case 0:
                 default:
-                    Game.LogTrivial("RNG = 0");
+                    Game.LogTrivial($"[{pluginName}] RNG = 0");
                     CalloutVersion = CalloutVariante.Windfarm;
                     break;
             }
@@ -219,9 +219,9 @@ namespace SSStuartCallouts.Callouts
                 
                 DriverBlip = Driver.AttachBlip();
                 DriverBlip.Order = 2;
-                DriverBlip.Scale = 0.8f;
+                DriverBlip.Scale = 0.75f;
                 DriverBlip.Name = "Driver";
-                DriverBlip.Color = System.Drawing.Color.LightSkyBlue;
+                DriverBlip.Color = System.Drawing.Color.Orange;
 
                 if(Driver.IsInAnyVehicle(false))
                     Driver.Tasks.LeaveVehicle(LeaveVehicleFlags.BailOut);
@@ -234,7 +234,7 @@ namespace SSStuartCallouts.Callouts
             {
                 if (Driver.IsAlive)
                 {
-                    Game.DisplayHelp("Take care of the driver, then press ~b~Enter~w~ to continue.");
+                    Game.DisplayHelp("Take care of the ~o~driver~w~, then press ~b~Enter~w~ to continue.");
                 }
                 DriverBlip.Delete();
 
