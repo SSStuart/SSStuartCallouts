@@ -21,20 +21,12 @@ namespace SSStuartCallouts.Callouts
         private Vector3 SpawnPoint;
         private bool DriverMarked;
         private bool EventCreated;
-        private bool EndCalloutDisplayed;
-
-        public int RandomNumber(int min, int max)
-        {
-            int random = new Random().Next(min, max);
-            return random;
-        }
-
 
         public override bool OnBeforeCalloutDisplayed()
         {
-            SpawnPoint = World.GetNextPositionOnStreet(Game.LocalPlayer.Character.Position.Around(800f));
+            SpawnPoint = World.GetNextPositionOnStreet(Game.LocalPlayer.Character.Position.Around2D(500f));
             ShowCalloutAreaBlipBeforeAccepting(SpawnPoint, 30f);
-            AddMinimumDistanceCheck(300f, SpawnPoint);
+            AddMinimumDistanceCheck(200f, SpawnPoint);
             CalloutMessage = "Car Crash";
             CalloutPosition = SpawnPoint;
             Functions.PlayScannerAudioUsingPosition("WE_HAVE CRIME_MOTOR_VEHICLE_ACCIDENT_01 IN_OR_ON_POSITION", SpawnPoint);
@@ -63,8 +55,10 @@ namespace SSStuartCallouts.Callouts
                 "benson"
             };
 
-            CrashedVehicle = new Vehicle(vehicleList[RandomNumber(0, vehicleList.Count)], SpawnPoint.Around(4f, 8f), RandomNumber(-180, 180));
-            CrashedVehicle.IsPersistent = true;
+            CrashedVehicle = new Vehicle(vehicleList[MathHelper.GetRandomInteger(vehicleList.Count)], SpawnPoint.Around2D(4f, 8f), MathHelper.GetRandomInteger(-180, 180))
+            {
+                IsPersistent = true
+            };
 
             if (CrashedVehicle.Model.IsBus)
                 Driver = new Ped("s_m_m_gentransport", SpawnPoint, 0f);
@@ -75,7 +69,7 @@ namespace SSStuartCallouts.Callouts
             Driver.IsPersistent = true;
             Driver.BlockPermanentEvents = true;
             Driver.WarpIntoVehicle(CrashedVehicle, -1);
-            Driver.Health = RandomNumber(100, 200);
+            Driver.Health = MathHelper.GetRandomInteger(100, 200);
 
             EventBlip = new Blip(SpawnPoint)
             {
@@ -86,7 +80,6 @@ namespace SSStuartCallouts.Callouts
 
             EventCreated = false;
             DriverMarked = false;
-            EndCalloutDisplayed = false;
 
             return base.OnCalloutAccepted();
         }
@@ -97,27 +90,30 @@ namespace SSStuartCallouts.Callouts
 
             if (!EventCreated && Game.LocalPlayer.Character.DistanceTo(CrashedVehicle) < 300f)
             {
-                Game.DisplayNotification("The involved vehicle is a ~o~" + CrashedVehicle.Model.Name);
-                CalloutInterfaceAPI.Functions.SendMessage(this, "The involved vehicle is a " + CrashedVehicle.Model.Name);
+                string vehicleName = NativeFunction.Natives.GET_FILENAME_FOR_AUDIO_CONVERSATION<string>(CrashedVehicle.Model.Name);
+                Game.DisplayNotification($"The involved vehicle is a ~o~{vehicleName}");
+                CalloutInterfaceAPI.Functions.SendMessage(this, $"The involved vehicle is a {vehicleName}");
 
-                CrashedVehicle.EngineHealth = RandomNumber(0, 100);
+                CrashedVehicle.EngineHealth = MathHelper.GetRandomInteger(100);
                 CrashedVehicle.IsDriveable = false;
                 CrashedVehicle.IndicatorLightsStatus = VehicleIndicatorLightsStatus.Both;
-                if(RandomNumber(0,2) == 1)
-                    CrashedVehicle.Wheels[RandomNumber(0,2)].BurstTire();
+                if (MathHelper.GetRandomInteger(2) == 1)
+                    CrashedVehicle.Wheels[MathHelper.GetRandomInteger(2)].BurstTire();
 
                 if (!CrashedVehicle.IsOnScreen)
                     CrashedVehicle.Velocity = new Vector3(20, 30, 0);
 
-                if (RandomNumber(0,3) == 1)
+                CrashedVehicle.SetRotationRoll(MathHelper.GetRandomInteger(-180, 180));
+
+                if (MathHelper.GetRandomInteger(3) == 1)
                     CrashedVehicle.Doors[0].BreakOff();
-                if (RandomNumber(0, 3) == 1)
+                if (MathHelper.GetRandomInteger(3) == 1)
                     CrashedVehicle.PunctureFuelTank();
 
                 if (Driver.IsAlive)
                 {
                     Game.LogTrivial($"[{pluginName}] Driver is alive");
-                    Driver.Tasks.LeaveVehicle(CrashedVehicle, LeaveVehicleFlags.LeaveDoorOpen).WaitForCompletion();
+                    Driver.Tasks.LeaveVehicle(CrashedVehicle, LeaveVehicleFlags.LeaveDoorOpen).WaitForCompletion(5000);
                     EventBlip.Delete();
                     CrashedVehicleBlip = CrashedVehicle.AttachBlip();
                     CrashedVehicleBlip.RouteColor = Main.calloutWaypointColor;
@@ -128,7 +124,7 @@ namespace SSStuartCallouts.Callouts
                     if (CrashedVehicle.IsOnFire)
                     {
                         Game.LogTrivial($"[{pluginName}] Vehicle on fire");
-                        if (RandomNumber(0, 2) == 1)
+                        if (MathHelper.GetRandomInteger(2) == 1)
                         {
                             Game.LogTrivial($"[{pluginName}] Driver set on fire");
                             Driver.IsOnFire = true;
@@ -136,11 +132,12 @@ namespace SSStuartCallouts.Callouts
                         else
                         {
                             Game.LogTrivial($"[{pluginName}] Driver fleeing");
-                            Driver.Tasks.ReactAndFlee(Game.LocalPlayer.Character).WaitForCompletion(10000);
+                            Driver.Tasks.Flee(CrashedVehicle.Position, 20f, 10000).WaitForCompletion(10000);
+                        }
                         }
                     } else
                     {
-                        if (RandomNumber(0, 2) == 1)
+                        if (MathHelper.GetRandomInteger(2) == 1)
                         {
                             Game.LogTrivial($"[{pluginName}] Driver ragdolling");
                             Driver.IsRagdoll = true;
@@ -175,20 +172,11 @@ namespace SSStuartCallouts.Callouts
             {
                 if (DriverBlip.Exists())
                     DriverBlip.Delete();
-            }
-            if (EventCreated && DriverMarked && Driver.IsRagdoll && Game.LocalPlayer.Character.DistanceTo(Driver) < 3f)
-            {
-                Game.DisplaySubtitle("The ~o~driver~w~ seems to be unconscious");
-            }
 
-
-            if (EventCreated && !EndCalloutDisplayed && Driver.IsDead)
-            {
-                Game.DisplayNotification("The ~o~driver~w~ has died.");
                 Game.DisplayHelp("Press ~b~End~w~ to end the callout.");
-                EndCalloutDisplayed = true;
             }
-            else if (EventCreated && (Game.LocalPlayer.Character.DistanceTo(Driver) > 300f || !Driver.Exists() || Game.LocalPlayer.Character.DistanceTo(CrashedVehicle) > 300f))
+
+            if (DriverMarked && (Game.LocalPlayer.Character.DistanceTo(Driver) > 300f || !Driver.Exists() || Game.LocalPlayer.Character.DistanceTo(CrashedVehicle) > 300f))
             {
                 End();
             }
