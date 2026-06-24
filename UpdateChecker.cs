@@ -108,13 +108,15 @@ namespace SSStuartCallouts
                     {
                         Game.LogTrivial($"[{Main.pluginName}] Update available ! Current version: {currentVersion}, Latest version: {lastVersion}");
                         return "yes";
-                    } else if (currentVersion >= lastVersion)
+                    }
+                    else if (currentVersion >= lastVersion)
                     {
                         Game.LogTrivial($"[{Main.pluginName}] You are using the latest version ({currentVersion}).");
                         return "no";
                     }
-                    
-                } else
+
+                }
+                else
                 {
                     Game.LogTrivial($"[{Main.pluginName}] Update check failed: Could not parse version from response : {responseMessage}");
                     return "error";

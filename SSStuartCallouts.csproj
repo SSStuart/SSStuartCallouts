@@ -71,6 +71,7 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>call C:\Users\SSStuart\source\repos\SSStuartCallouts\bin\Debug\Z-[moveToPluginsFolder].bat</PostBuildEvent>
+    <PostBuildEvent>copy /Y "C:\Users\SSStuart\source\repos\SSStuartCallouts\bin\Debug\SSStuartCallouts.dll" "D:\Jeux\Rockstar Games\Grand Theft Auto V\plugins\LSPDFR\"
+copy /Y "C:\Users\SSStuart\source\repos\SSStuartCallouts\bin\Debug\SSStuartCallouts.pdb" "D:\Jeux\Rockstar Games\Grand Theft Auto V\plugins\LSPDFR\"</PostBuildEvent>
   </PropertyGroup>
 </Project>

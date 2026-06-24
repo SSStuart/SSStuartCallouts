@@ -1,17 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using Rage;
-using LSPD_First_Response.Mod.API;
+﻿using LSPD_First_Response.Mod.API;
 using LSPD_First_Response.Mod.Callouts;
+using Rage;
+using Rage.Native;
+using System.Collections.Generic;
 
 namespace SSStuartCallouts.Callouts
 {
 
     [CalloutInterfaceAPI.CalloutInterface("Abandoned Vehicle", CalloutProbability.Low, "Reports of an abandoned vehicle on the roadway", "Code 3")]
-    public class AbandonedVehicle: Callout
+    public class AbandonedVehicle : Callout
     {
         public static string pluginName = Main.pluginName;
-        public static string pluginVersion = Main.pluginVersion;
 
         private Vector3 SpawnPoint;
         private LHandle Pursuit;
@@ -112,17 +111,17 @@ namespace SSStuartCallouts.Callouts
                     Thief.IsPersistent = true;
                 }
                 else
-                    {
+                {
                     Game.LogTrivial($"[{pluginName}] Using spawned ped");
                     Thief = new Ped(AbandonedCar.Position.Around(50f))
                     {
                         IsPersistent = true,
                         BlockPermanentEvents = true,
                     };
-                    }
+                }
 
                 CarDeliveryFiber = GameFiber.StartNew(delegate
-                    {
+                {
                     if (Thief.IsInAnyVehicle(false))
                     {
                         if (Thief.CurrentVehicle.Driver == Thief)
@@ -137,7 +136,7 @@ namespace SSStuartCallouts.Callouts
                     Game.LogTrivial($"[{pluginName}] Thief approching player car on foot");
                     Thief.Tasks.FollowNavigationMeshToPosition(PlayerVehicle.GetOffsetPositionRight(-2f), PlayerVehicle.Heading, 1f).WaitForCompletion(60000);
                     Thief.Tasks.EnterVehicle(PlayerVehicle, -1, 3f).WaitForCompletion(5000);
-                        Game.LogTrivial($"[{pluginName}] Assinging task to drive away");
+                    Game.LogTrivial($"[{pluginName}] Assinging task to drive away");
                     Thief.Tasks.CruiseWithVehicle(PlayerVehicle, 100f, VehicleDrivingFlags.Emergency);
 
                     GameFiber.Sleep(5000);
@@ -149,63 +148,63 @@ namespace SSStuartCallouts.Callouts
                     }
 
                     if (AbandonedCarBlip.Exists())
-                            AbandonedCarBlip.Delete();
+                        AbandonedCarBlip.Delete();
 
-                        Pursuit = Functions.CreatePursuit();
+                    Pursuit = Functions.CreatePursuit();
                     Functions.AddPedToPursuit(Pursuit, Thief);
                     Functions.RequestBackup(Thief.Position, LSPD_First_Response.EBackupResponseType.Pursuit, LSPD_First_Response.EBackupUnitType.AirUnit);
-                        Functions.SetPursuitIsActiveForPlayer(Pursuit, true);
+                    Functions.SetPursuitIsActiveForPlayer(Pursuit, true);
 
-                        GameFiber.Wait(1500);
-                        CalloutInterfaceAPI.Functions.SendMessage(this, "The unit's vehicle has been stolen, pursuit initiated.");
+                    GameFiber.Wait(1500);
+                    CalloutInterfaceAPI.Functions.SendMessage(this, "The unit's vehicle has been stolen, pursuit initiated.");
                     Game.DisplayNotification("dia_police", "dia_police", "Dispatch", "", "Sending a new replacement vehicle");
                     Functions.PlayScannerAudioUsingPosition("WE_HAVE CRIME_GRAND_THEFT_AUTO OUTRO_03 ASSISTANCE_REQUIRED IN_OR_ON_POSITION", Thief.Position);
 
                     ReplacementVehicle = new Vehicle("police", World.GetNextPositionOnStreet(Game.LocalPlayer.Character.GetOffsetPositionFront(-100)), Game.LocalPlayer.Character.Heading)
-                        {
-                            IsSirenOn = true,
-                            IsPersistent = true
-                        };
+                    {
+                        IsSirenOn = true,
+                        IsPersistent = true
+                    };
 
                     CarDeliveryPed = new Ped("csb_agent", ReplacementVehicle.GetOffsetPositionRight(2f), ReplacementVehicle.Heading)
-                        {
-                            BlockPermanentEvents = true,
-                            IsPersistent = true
-                        };
+                    {
+                        BlockPermanentEvents = true,
+                        IsPersistent = true
+                    };
                     CarDeliveryPed.ResetVariation();
 
                     CarDeliveryBlip = new Blip(ReplacementVehicle)
-                        {
-                            Sprite = BlipSprite.PolicePatrol,
-                            Color = System.Drawing.Color.LightSkyBlue
-                        };
+                    {
+                        Sprite = BlipSprite.PolicePatrol,
+                        Color = System.Drawing.Color.LightSkyBlue
+                    };
 
                     CarDeliveryPed.WarpIntoVehicle(ReplacementVehicle, -1);
-                        Game.LogTrivial($"[{pluginName}] Task : Drive to player");
+                    Game.LogTrivial($"[{pluginName}] Task : Drive to player");
                     CarDeliveryPed.Tasks.DriveToPosition(Game.LocalPlayer.Character.Position, 100f, VehicleDrivingFlags.Emergency, 20f);
                     while (ReplacementVehicle.DistanceTo(Game.LocalPlayer.Character) > 20f)
-                        {
-                            Game.LogTrivial($"[{pluginName}] Distance to player > 20m");
-                            Game.LogTrivial($"[{pluginName}] Task : Drive to player");
+                    {
+                        Game.LogTrivial($"[{pluginName}] Distance to player > 20m");
+                        Game.LogTrivial($"[{pluginName}] Task : Drive to player");
                         CarDeliveryPed.Tasks.DriveToPosition(Game.LocalPlayer.Character.Position, 80f, VehicleDrivingFlags.Emergency, 20f);
-                            GameFiber.Wait(2000);
-                        }
+                        GameFiber.Wait(2000);
+                    }
 
                     while (ReplacementVehicle.Speed > 1f)
-                            GameFiber.Wait(500);
-                        Game.LogTrivial($"[{pluginName}] Speed < 1m/s   Task : Clear");
+                        GameFiber.Wait(500);
+                    Game.LogTrivial($"[{pluginName}] Speed < 1m/s   Task : Clear");
                     CarDeliveryPed.Tasks.Clear();
-                        if (!Game.LocalPlayer.Character.IsInAnyVehicle(false))
-                        {
+                    if (!Game.LocalPlayer.Character.IsInAnyVehicle(false))
+                    {
                         Game.DisplaySubtitle("Hey, here's a replacement car!", 5000);
                         ReplacementVehicle.IsSirenOn = false;
                         CarDeliveryPed.Tasks.LeaveVehicle(LeaveVehicleFlags.None).WaitForCompletion(2000);
                         CarDeliveryPed.Tasks.Wander();
-                        }
-                        
+                    }
+
                     CarDeliveryBlip.Delete();
 
-                        PursuitCreated = true;
+                    PursuitCreated = true;
                 });
 
                 ThiefInAction = true;

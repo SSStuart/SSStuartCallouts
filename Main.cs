@@ -1,8 +1,8 @@
-﻿using System;
+﻿using LSPD_First_Response.Mod.API;
 using Rage;
-using LSPD_First_Response.Mod.API;
-using System.Reflection;
+using System;
 using System.Drawing;
+using System.Reflection;
 
 namespace SSStuartCallouts
 {
@@ -22,15 +22,13 @@ namespace SSStuartCallouts
             Game.LogTrivial($"Go on duty to fully load {pluginName}.");
 
             UpdateChecker.CheckForUpdates();
-
-            AppDomain.CurrentDomain.AssemblyResolve += new ResolveEventHandler(LSPDFRResolveEventHandler);
         }
-        
+
         public override void Finally()
         {
             Game.LogTrivial($"{pluginName} has been cleaned up.");
         }
-        
+
         private static void OnOnDutyStateChangedHandler(bool OnDuty)
         {
             if (OnDuty)
@@ -39,25 +37,13 @@ namespace SSStuartCallouts
                 Game.DisplayNotification("commonmenu", "mp_hostcrown", pluginName, $"V {pluginVersion}", "~g~Loaded successfully !");
             }
         }
-        
+
         private static void RegisterCallouts()
         {
             // Functions.RegisterCallout(typeof(Callouts.TestCallout));
             Functions.RegisterCallout(typeof(Callouts.CarCrash));
             Functions.RegisterCallout(typeof(Callouts.TrainDerailment));
             Functions.RegisterCallout(typeof(Callouts.AbandonedVehicle));
-        }
-
-        public static Assembly LSPDFRResolveEventHandler(object sender, ResolveEventArgs args)
-        {
-            foreach (Assembly assembly in Functions.GetAllUserPlugins())
-            {
-                if (args.Name.ToLower().Contains(assembly.GetName().Name.ToLower()))
-                {
-                    return assembly;
-                }
-            }
-            return null;
         }
 
         public static bool IsLSPDFRPluginRunning(string Plugin, Version minversion = null)

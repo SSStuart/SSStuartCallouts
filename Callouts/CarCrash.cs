@@ -1,24 +1,23 @@
-﻿using System;
-using System.Collections.Generic;
-using Rage;
-using LSPD_First_Response.Mod.API;
+﻿using LSPD_First_Response.Mod.API;
 using LSPD_First_Response.Mod.Callouts;
+using Rage;
+using Rage.Native;
+using System.Collections.Generic;
 
 namespace SSStuartCallouts.Callouts
 {
 
     [CalloutInterfaceAPI.CalloutInterface("Car Crash", CalloutProbability.Medium, "Vehicle accident reported", "Code 3")]
-    public class CarCrash: Callout
+    public class CarCrash : Callout
     {
         public static string pluginName = Main.pluginName;
-        public static string pluginVersion = Main.pluginVersion;
 
-        private Ped Driver;
-        private Vehicle CrashedVehicle;
+        private Vector3 SpawnPoint;
         private Blip EventBlip;
         private Blip CrashedVehicleBlip;
         private Blip DriverBlip;
-        private Vector3 SpawnPoint;
+        private Vehicle CrashedVehicle;
+        private Ped Driver;
         private bool DriverMarked;
         private bool EventCreated;
 
@@ -134,8 +133,8 @@ namespace SSStuartCallouts.Callouts
                             Game.LogTrivial($"[{pluginName}] Driver fleeing");
                             Driver.Tasks.Flee(CrashedVehicle.Position, 20f, 10000).WaitForCompletion(10000);
                         }
-                        }
-                    } else
+                    }
+                    else
                     {
                         if (MathHelper.GetRandomInteger(2) == 1)
                         {

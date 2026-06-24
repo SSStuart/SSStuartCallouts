@@ -1,7 +1,6 @@
 ﻿using LSPD_First_Response.Mod.API;
 using LSPD_First_Response.Mod.Callouts;
 using Rage;
-using System;
 using System.Collections.Generic;
 
 namespace SSStuartCallouts.Callouts
@@ -11,16 +10,15 @@ namespace SSStuartCallouts.Callouts
     public class AttackedTransport : Callout
     {
         public static string pluginName = Main.pluginName;
-        public static string pluginVersion = Main.pluginVersion;
 
-        private Blip EventBlip;
         private Vector3 SpawnPoint;
-        private int CalloutType;
-        private Vehicle AttackersVehicle;
-        private Ped AttackerOne, AttackerTwo;
-        private Vehicle TransportVehicle;
-        private Ped TransportDriver, TransportPassenger;
         private LHandle Pursuit;
+        private Blip EventBlip;
+        private Vehicle AttackersVehicle;
+        private Vehicle TransportVehicle;
+        private Ped AttackerOne, AttackerTwo;
+        private Ped TransportDriver, TransportPassenger;
+        private int CalloutType;
         private bool EventCreated;
         private bool DriverOutOfTransport;
         private bool TransportVehicleUnlocked;
@@ -126,7 +124,8 @@ namespace SSStuartCallouts.Callouts
             {
                 TransportDriver = new Ped("s_m_m_prisguard_01", SpawnPoint, 0f);
                 TransportPassenger = new Ped("u_m_y_prisoner_01", SpawnPoint, 0f);
-            } else
+            }
+            else
             {
                 TransportDriver = new Ped("s_m_m_armoured_01", SpawnPoint, 0f);
                 TransportPassenger = new Ped("s_m_m_armoured_02", SpawnPoint, 0f);
@@ -187,19 +186,19 @@ namespace SSStuartCallouts.Callouts
                     TransportVehicleUnlocked = true;
                     GameFiber.StartNew(delegate
                     {
-                    TransportPassenger.Tasks.LeaveVehicle(LeaveVehicleFlags.LeaveDoorOpen).WaitForCompletion(5000);
+                        TransportPassenger.Tasks.LeaveVehicle(LeaveVehicleFlags.LeaveDoorOpen).WaitForCompletion(5000);
                         Functions.AddPedToPursuit(Pursuit, TransportPassenger);
                         Functions.SetPursuitDisableAIForPed(TransportPassenger, true);
-                    if (CalloutType == 0)
-                    {
-                        if (AttackersVehicle.DistanceTo(TransportVehicle) < 50f)
-                            AttackerOne.Tasks.PerformDrivingManeuver(VehicleManeuver.GoForwardStraightBraking);
+                        if (CalloutType == 0)
+                        {
+                            if (AttackersVehicle.DistanceTo(TransportVehicle) < 50f)
+                                AttackerOne.Tasks.PerformDrivingManeuver(VehicleManeuver.GoForwardStraightBraking);
+                            else
+                                AttackerOne.Tasks.DriveToPosition(TransportPassenger.Position, 100f, VehicleDrivingFlags.Emergency).WaitForCompletion(30000);
+                            TransportPassenger.Tasks.EnterVehicle(AttackersVehicle, 0);
+                        }
                         else
-                            AttackerOne.Tasks.DriveToPosition(TransportPassenger.Position, 100f, VehicleDrivingFlags.Emergency).WaitForCompletion(30000);
-                        TransportPassenger.Tasks.EnterVehicle(AttackersVehicle, 0);
-                    }
-                    else
-                        TransportPassenger.Tasks.ReactAndFlee(AttackerOne);
+                            TransportPassenger.Tasks.ReactAndFlee(AttackerOne);
 
                         Functions.SetPursuitDisableAIForPed(AttackerOne, false);
                         Functions.SetPursuitDisableAIForPed(AttackerTwo, false);
@@ -207,8 +206,8 @@ namespace SSStuartCallouts.Callouts
                     });
                 }
 
-            if (EventCreated && !PursuitCreated 
-                && ((TransportDriver.CurrentVehicle == null && !DriverOutOfTransport) 
+            if (EventCreated && !PursuitCreated
+                && ((TransportDriver.CurrentVehicle == null && !DriverOutOfTransport)
                 || (TransportVehicleUnlocked && !DriverOutOfTransport)))
             {
                 EventBlip.IsRouteEnabled = false;
@@ -232,7 +231,7 @@ namespace SSStuartCallouts.Callouts
                     Functions.AddPedToPursuit(Pursuit, TransportPassenger);
                 Functions.RequestBackup(AttackerOne.Position, LSPD_First_Response.EBackupResponseType.Pursuit, LSPD_First_Response.EBackupUnitType.AirUnit);
                 EventBlip.Delete();
-                
+
                 DriverOutOfTransport = true;
             }
 
@@ -244,8 +243,8 @@ namespace SSStuartCallouts.Callouts
                 TransportPrisonerArrestedOrDead = TransportPassenger.Exists() && (Functions.IsPedArrested(TransportPassenger) || TransportPassenger.IsDead);
             }
 
-            if (Game.IsKeyDown(System.Windows.Forms.Keys.End) 
-                || PursuitCreated && !Functions.IsPursuitStillRunning(Pursuit) 
+            if (Game.IsKeyDown(System.Windows.Forms.Keys.End)
+                || PursuitCreated && !Functions.IsPursuitStillRunning(Pursuit)
                 || (AttackersDeadOrArrested && TransportPrisonerArrestedOrDead))
                 End();
         }
@@ -269,15 +268,8 @@ namespace SSStuartCallouts.Callouts
                 if (AttackerTwo.Tasks != null) AttackerTwo.Tasks.Clear();
                 AttackerTwo.Dismiss();
             }
-
-            if (TransportDriver.Exists())
-            {
-                TransportDriver.Dismiss();
-            }
-            if (TransportPassenger.Exists())
-            {
-                TransportPassenger.Dismiss();
-            }
+            if (TransportDriver.Exists()) TransportDriver.Dismiss();
+            if (TransportPassenger.Exists()) TransportPassenger.Dismiss();
             if (TransportVehicle.Exists()) TransportVehicle.Dismiss();
 
             Game.DisplayNotification("[CALLOUT 'ATTACKED TRANSPORT' ENDED]");

@@ -2,9 +2,9 @@
 using LSPD_First_Response.Mod.Callouts;
 using Rage;
 using Rage.Native;
-using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
+using Object = Rage.Object;
 
 namespace SSStuartCallouts.Callouts
 {
@@ -13,20 +13,21 @@ namespace SSStuartCallouts.Callouts
     public class TrainDerailment : Callout
     {
         public static string pluginName = Main.pluginName;
-        public static string pluginVersion = Main.pluginVersion;
 
-        private Ped Driver;
-        private Ped Saboteur;
-        public static Vehicle CrashedTrain, TrainCarriage1, TrainCarriage2, TrainCarriage3_Tanker;
-        private List<Flatbed> Flatbeds = new List<Flatbed>();
-        private List<bool> VehicleMarkedFlatbed = new List<bool>() { false, false, false, false };
-        private Rage.Object Obstacle1, Obstacle2, Obstacle3, Obstacle4;
+        private LHandle Pursuit;
+        private Vector3 SpawnPoint;
+        private Vector3 DriverSpawnPosition;
         private Blip CrashedTrainBlip;
         private Blip DriverBlip;
         private Blip investigationBlip;
-        private Vector3 SpawnPoint;
+        private CalloutVariante CalloutVersion;
         private Checklist checklist = new Checklist();
-        private LHandle Pursuit;
+        private List<Flatbed> Flatbeds = new List<Flatbed>();
+        private List<bool> VehicleMarkedFlatbed = new List<bool>() { false, false, false, false };
+        public static Vehicle CrashedTrain, TrainCarriage1, TrainCarriage2, TrainCarriage3_Tanker;
+        private Ped Driver;
+        private Ped Saboteur;
+        private Object Obstacle1, Obstacle2, Obstacle3, Obstacle4;
         private int taskDriver, taskFire, taskFlatbed;
         private bool EventCreated;
         private bool LogicExplosionDriver;
@@ -36,7 +37,6 @@ namespace SSStuartCallouts.Callouts
         private bool LogicFireDone;
         private bool LogicInvestiSetup;
         private bool PursuitCreated;
-        private CalloutVariante CalloutVersion;
 
         private enum CalloutVariante
         {
@@ -64,7 +64,7 @@ namespace SSStuartCallouts.Callouts
             else if (CalloutVersion == CalloutVariante.SanChiaski)
                 SpawnPoint = new Vector3(2929.168f, 4604.511f, 49.23333f);
 
-            Game.LogTrivial($"[{pluginName}] Callout version : " +CalloutVersion.ToString());
+            Game.LogTrivial($"[{pluginName}] Callout version : " + CalloutVersion.ToString());
 
             ShowCalloutAreaBlipBeforeAccepting(SpawnPoint, 30f);
             AddMinimumDistanceCheck(300f, SpawnPoint);
@@ -88,10 +88,10 @@ namespace SSStuartCallouts.Callouts
                     TrainCarriage1 = new Vehicle("freightcont1", new Vector3(2078.5f, 1554.4f, 77.3f), 38.3f);
                     TrainCarriage2 = new Vehicle("freightgrain", new Vector3(2083.9f, 1539.4f, 77.7f), 0f);
                     TrainCarriage3_Tanker = new Vehicle("tankercar", new Vector3(2091.4f, 1525.0f, 78.3f), 50f);
-                    Obstacle1 = new Rage.Object("prop_rock_2_d", new Vector3(2059.2f, 1573.6f, 75f));
-                    Obstacle2 = new Rage.Object("prop_rock_2_c", new Vector3(2080.5f, 1559.9f, 76.2f));
-                    Obstacle3 = new Rage.Object("prop_rock_2_a", new Vector3(2068.4f, 1577.0f, 76.1f));
-                    Obstacle4 = new Rage.Object("prop_rock_2_g", new Vector3(2072.9f, 1551.7f, 76.0f))
+                    Obstacle1 = new Object("prop_rock_2_d", new Vector3(2059.2f, 1573.6f, 75f));
+                    Obstacle2 = new Object("prop_rock_2_c", new Vector3(2080.5f, 1559.9f, 76.2f));
+                    Obstacle3 = new Object("prop_rock_2_a", new Vector3(2068.4f, 1577.0f, 76.1f));
+                    Obstacle4 = new Object("prop_rock_2_g", new Vector3(2072.9f, 1551.7f, 76.0f))
                     {
                         IsPositionFrozen = true
                     };
@@ -106,10 +106,10 @@ namespace SSStuartCallouts.Callouts
                     TrainCarriage3_Tanker = new Vehicle("tankercar", new Vector3(2911.18f, 4580.73f, 48.34f), 338f);
                     TrainCarriage2 = new Vehicle("freightcont1", new Vector3(2900.51f, 4571.77f, 47.98f), 267f);
 
-                    Obstacle1 = new Rage.Object("prop_rock_1_g", new Vector3(2930.86f, 4594.60f, 47.97f));
-                    Obstacle2 = new Rage.Object("prop_rock_1_g", new Vector3(2907.07f, 4570.96f, 46.97f));
-                    Obstacle3 = new Rage.Object("prop_rock_1_g", new Vector3(2914.35f, 4587.82f, 47.45f));
-                    Obstacle4 = new Rage.Object("prop_metal_plates01", new Vector3(2937.93f, 4610.29f, 49.27f))
+                    Obstacle1 = new Object("prop_rock_1_g", new Vector3(2930.86f, 4594.60f, 47.97f));
+                    Obstacle2 = new Object("prop_rock_1_g", new Vector3(2907.07f, 4570.96f, 46.97f));
+                    Obstacle3 = new Object("prop_rock_1_g", new Vector3(2914.35f, 4587.82f, 47.45f));
+                    Obstacle4 = new Object("prop_metal_plates01", new Vector3(2937.93f, 4610.29f, 49.27f))
                     {
                         IsPositionFrozen = false,
                         Rotation = new Rotator(159.4008f, 44.9139f, 138.8085f)
@@ -119,7 +119,6 @@ namespace SSStuartCallouts.Callouts
                     break;
 
                 default:
-
                     break;
             }
             CrashedTrain.IsPersistent = true;
@@ -219,14 +218,14 @@ namespace SSStuartCallouts.Callouts
                 Game.DisplayHelp("Check the ~o~driver~w~");
 
                 CrashedTrainBlip.Delete();
-                
+
                 DriverBlip = Driver.AttachBlip();
                 DriverBlip.Order = 2;
                 DriverBlip.Scale = 0.75f;
                 DriverBlip.Name = "Driver";
                 DriverBlip.Color = System.Drawing.Color.Orange;
 
-                if(Driver.IsInAnyVehicle(false))
+                if (Driver.IsInAnyVehicle(false))
                     Driver.Tasks.LeaveVehicle(LeaveVehicleFlags.BailOut);
                 GameFiber.Wait(5000);
 
@@ -264,11 +263,11 @@ namespace SSStuartCallouts.Callouts
                         }
                         else
                         {
-                        Flatbed truck = new Flatbed(0);
-                        Flatbeds.Add(truck);
-                        VehicleMarkedFlatbed[0] = true;
+                            Flatbed truck = new Flatbed(0);
+                            Flatbeds.Add(truck);
+                            VehicleMarkedFlatbed[0] = true;
+                        }
                     }
-                }
                 }
                 if (TrainCarriage1 != null && TrainCarriage1.Exists() && Game.LocalPlayer.Character.DistanceTo(TrainCarriage1) < 8f && !VehicleMarkedFlatbed[1])
                 {
@@ -333,15 +332,15 @@ namespace SSStuartCallouts.Callouts
                 checklist.Disable();
                 if (investigationBlip.Exists())
                     investigationBlip.Delete();
-                    Saboteur.IsPersistent = false;
-                    Saboteur.BlockPermanentEvents = false;
+                Saboteur.IsPersistent = false;
+                Saboteur.BlockPermanentEvents = false;
                 Saboteur.Tasks.Clear();
-                    Pursuit = Functions.CreatePursuit();
-                    Functions.AddPedToPursuit(Pursuit, Saboteur);
-                    Functions.SetPursuitIsActiveForPlayer(Pursuit, true);
-                    PursuitCreated = true;
-                    CalloutInterfaceAPI.Functions.SendMessage(this, "A suspect was spotted near railway infrastructure and is fleeing. Pursuit has begun");
-                }
+                Pursuit = Functions.CreatePursuit();
+                Functions.AddPedToPursuit(Pursuit, Saboteur);
+                Functions.SetPursuitIsActiveForPlayer(Pursuit, true);
+                PursuitCreated = true;
+                CalloutInterfaceAPI.Functions.SendMessage(this, "A suspect was spotted near railway infrastructure and is fleeing. Pursuit has begun");
+            }
             if (PursuitCreated && !Functions.IsPursuitStillRunning(Pursuit) || (Saboteur.Exists() && !Saboteur.IsAlive))
             {
                 End();
@@ -361,9 +360,7 @@ namespace SSStuartCallouts.Callouts
                 Functions.ForceEndPursuit(Pursuit);
 
             if (TrainCarriage3_Tanker != null && TrainCarriage3_Tanker.Exists())
-            {
                 NativeFunction.Natives.StopFireInRange(TrainCarriage3_Tanker.Position.X, TrainCarriage3_Tanker.Position.Y, TrainCarriage3_Tanker.Position.Z, 30f);
-            }
 
             if (CrashedTrainBlip.Exists()) CrashedTrainBlip.Delete();
             if (DriverBlip.Exists()) DriverBlip.Delete();
@@ -399,13 +396,13 @@ namespace SSStuartCallouts.Callouts
 
     public class Flatbed
     {
-        private Vehicle truck;
-        private Vehicle trailer;
-        private int targetIndex;
-        private Vehicle trainTarget;
-        private Ped driver;
-        private Blip blip;
-        private static List<List<Vector3>> spawnPos = new List<List<Vector3>>()
+        private readonly Vehicle truck;
+        private readonly Vehicle trailer;
+        private readonly int targetIndex;
+        private readonly Vehicle trainTarget;
+        private readonly Ped driver;
+        private readonly Blip blip;
+        private static readonly List<List<Vector3>> spawnPos = new List<List<Vector3>>()
         {
             new List<Vector3>
             {
@@ -428,7 +425,7 @@ namespace SSStuartCallouts.Callouts
                 new Vector3(2312.508f, 1136.22f, 79.44845f)     // Trailer
             }
         };
-        private static List<List<Vector3>> drivePos = new List<List<Vector3>>()
+        private static readonly List<List<Vector3>> drivePos = new List<List<Vector3>>()
         {
             new List<Vector3>
             {
@@ -533,21 +530,15 @@ namespace SSStuartCallouts.Callouts
 
         public void Remove()
         {
-            if (trainTarget != null && trainTarget.Exists())
-            {
-                trainTarget.Delete();
-            }
-            if (trailer != null && trailer.Exists())
-                trailer.Dismiss();
+            if (trainTarget != null && trainTarget.Exists()) trainTarget.Delete();
+            if (trailer != null && trailer.Exists()) trailer.Dismiss();
             if (driver != null && driver.Exists())
             {
                 driver.Tasks.Clear();
                 driver.Dismiss();
             }
-            if (blip != null && blip.Exists())
-                blip.Delete();
-            if (truck != null && truck.Exists())
-                truck.Dismiss();
+            if (blip != null && blip.Exists()) blip.Delete();
+            if (truck != null && truck.Exists()) truck.Dismiss();
         }
     }
 }

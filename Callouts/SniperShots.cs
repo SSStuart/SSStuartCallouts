@@ -1,29 +1,27 @@
-﻿using System;
-using Rage;
-using LSPD_First_Response.Mod.API;
+﻿using LSPD_First_Response.Mod.API;
 using LSPD_First_Response.Mod.Callouts;
-using System.Collections.Generic;
+using Rage;
 using Rage.Native;
+using System.Collections.Generic;
 
 namespace SSStuartCallouts.Callouts
 {
 
     [CalloutInterfaceAPI.CalloutInterface("Sniper Shots", CalloutProbability.Low, "Sniper shot at a civilian", "Code 3")]
-    public class SniperShots: Callout
+    public class SniperShots : Callout
     {
         public static string pluginName = Main.pluginName;
-        public static string pluginVersion = Main.pluginVersion;
 
-        private int calloutVariation;
-        private Ped Suspect;
-        private Ped Victim;
-        private Vehicle VictimVehicle;
-        private List<string> vehicleList;
-        private Vehicle BackupVehicle;
-        private Vehicle Tanker;
-        private Ped BackupPed;
         private Vector3 SpawnPoint;
         private Blip WaypointBlip;
+        private List<string> vehicleList;
+        private Vehicle VictimVehicle;
+        private Vehicle BackupVehicle;
+        private Vehicle Tanker;
+        private Ped Suspect;
+        private Ped Victim;
+        private Ped BackupPed;
+        private int calloutVariation;
         private bool SuspectShooting;
         private bool BackupOnsite;
 
