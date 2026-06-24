@@ -26,13 +26,6 @@ namespace SSStuartCallouts.Callouts
         private Blip WaypointBlip;
         private bool SuspectShooting;
         private bool BackupOnsite;
-        private uint speedzone;
-
-        public int RandomNumber(int min, int max)
-        {
-            int random = new Random().Next(min, max);
-            return random;
-        }
 
         public override bool OnBeforeCalloutDisplayed()
         {
@@ -51,7 +44,8 @@ namespace SSStuartCallouts.Callouts
             ShowCalloutAreaBlipBeforeAccepting(SpawnPoint, 30f);
             AddMinimumDistanceCheck(300f, SpawnPoint);
             CalloutMessage = "Shots fired";
-            BackupOnsite = RandomNumber(0,2) == 0;
+            CalloutPosition = SpawnPoint;
+            BackupOnsite = MathHelper.GetRandomInteger(2) == 0;
 
             Functions.PlayScannerAudioUsingPosition("WE_HAVE A CRIME_SNIPER CRIME_GUNFIRE IN_OR_ON_POSITION", SpawnPoint);
 
@@ -75,8 +69,9 @@ namespace SSStuartCallouts.Callouts
                 };
 
                 Suspect = new Ped(new Vector3(-193.2576f, 6147.558f, 36.9f));
-                Victim = new Ped(new Vector3(-206.4089f, 6225.474f, 31.49064f));
-            } else if (calloutVariation == 1)
+                Victim = new Ped(new Vector3(-187.7549f, 6236.64f, 31.48954f), 130);
+            }
+            else if (calloutVariation == 1)
             {
                 vehicleList = new List<string>
                 {
@@ -99,7 +94,7 @@ namespace SSStuartCallouts.Callouts
                     "ig_davenorton",
                     "csb_reporter"
                 };
-                Victim = new Ped(VictimModel[RandomNumber(0,VictimModel.Count)], new Vector3(240.1729f, -399.2655f, 47.92437f), 0f);
+                Victim = new Ped(VictimModel[MathHelper.GetRandomInteger(VictimModel.Count)], new Vector3(240.1729f, -399.2655f, 47.92437f), 0f);
             }
 
             Suspect.IsPersistent = true;
@@ -113,30 +108,37 @@ namespace SSStuartCallouts.Callouts
             if (calloutVariation == 1)
             {
                 Victim.Tasks.TakeCoverAt(new Vector3(240.1729f, -399.2655f, 47.92437f), new Vector3(242.3397f, -336.8919f, 60.00277f), 10000, false);
-                VictimVehicle = new Vehicle(vehicleList[RandomNumber(0,vehicleList.Count)], new Vector3(257.9648f, -377.5579f, 43.88403f), 248.254f);
-                VictimVehicle.IsPersistent = true;
+                VictimVehicle = new Vehicle(vehicleList[MathHelper.GetRandomInteger(vehicleList.Count)], new Vector3(257.9648f, -377.5579f, 43.88403f), 248.254f)
+                {
+                    IsPersistent = true
+                };
+            }
+            else if (calloutVariation == 0)
+            {
+                VictimVehicle = new Vehicle(vehicleList[MathHelper.GetRandomInteger(vehicleList.Count)], new Vector3(-205.3138f, 6222.104f, 31.19034f), 40.4f)
+                {
+                    IsPersistent = true
+                };
+                Tanker = new Vehicle("tanker", new Vector3(-205.2529f, 6198.685f, 31.23893f), 314.3732f)
+                {
+                    IsPersistent = true
+                };
+
+                NativeFunction.Natives.SET_ROADS_IN_AREA(-230, 6167, 0, -94, 6316, 200, false, true);
             }
 
-            if(BackupOnsite)
+            if (BackupOnsite)
             {
                 if (calloutVariation == 0)
                 {
                     BackupVehicle = new Vehicle("sheriff", new Vector3(-137.583f, 6240.756f, 31.18568f), 196);
                     BackupPed = new Ped("s_m_y_sheriff_01", new Vector3(-139.9209f, 6242.334f, 31.16767f), 135);
                     BackupPed.Tasks.PlayAnimation("amb@code_human_police_investigate@idle_b", "idle_d", 1f, AnimationFlags.Loop);
-
-                    Tanker = new Vehicle("tanker", new Vector3(-205.2529f, 6198.685f, 31.23893f), 314.3732f);
-                    Tanker.IsPersistent = true;
-
-                    //speedzone = World.AddSpeedZone(new Vector3(-201.0948f, 6181.535f, 31.17964f), 100f, 30f);
-                    NativeFunction.Natives.SET_ROADS_IN_AREA(-230, 6167, 0, -94, 6316, 200, false, true);
                 }
                 else if (calloutVariation == 1)
                 {
                     BackupVehicle = new Vehicle("police2", new Vector3(226.8215f, -363.4158f, 43.97262f), 212.704f);
                     BackupPed = new Ped("s_m_y_cop_01", new Vector3(224.7354f, -364.8016f, 44.11553f), 0f);
-
-                    speedzone = World.AddSpeedZone(new Vector3(244.5784f, -364.001f, 44.47871f), 50f, 0f);
                 }
                 BackupVehicle.IsPersistent = true;
                 BackupVehicle.IsSirenOn = true;
@@ -186,8 +188,8 @@ namespace SSStuartCallouts.Callouts
         {
             base.End();
 
-            World.RemoveSpeedZone(speedzone);
             // Native to reenable nodes
+            NativeFunction.Natives.SET_ROADS_IN_AREA(-230, 6167, 0, -94, 6316, 200, true, true);
 
             if (Suspect.Exists())
             {
@@ -200,7 +202,7 @@ namespace SSStuartCallouts.Callouts
                 if (VictimVehicle.Exists() && VictimVehicle.EngineHealth > 400)
                 {
                     Game.LogTrivial($"[{pluginName}] victim entering is vehicle");
-                    Victim.Tasks.EnterVehicle(VictimVehicle, -1, 10f).WaitForCompletion(15000);
+                    Victim.Tasks.EnterVehicle(VictimVehicle, -1, 10f);
                 }
                 Victim.Dismiss();
             }
