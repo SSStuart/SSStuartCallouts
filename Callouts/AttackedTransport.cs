@@ -26,18 +26,13 @@ namespace SSStuartCallouts.Callouts
         private bool TransportVehicleUnlocked;
         private bool PursuitCreated;
 
-        public int RandomNumber(int min, int max)
-        {
-            int random = new Random().Next(min, max);
-            return random;
-        }
-
         public override bool OnBeforeCalloutDisplayed()
         {
-            CalloutType = RandomNumber(0, 2);
-            SpawnPoint = World.GetNextPositionOnStreet(Game.LocalPlayer.Character.Position.Around(800f));
+            CalloutType = MathHelper.GetRandomInteger(2);
+            SpawnPoint = World.GetNextPositionOnStreet(Game.LocalPlayer.Character.Position.Around2D(800f));
             ShowCalloutAreaBlipBeforeAccepting(SpawnPoint, 30f);
             AddMinimumDistanceCheck(500f, SpawnPoint);
+            CalloutPosition = SpawnPoint;
             if (CalloutType == 0)
             {
                 CalloutMessage = "Attacked prisoner transport";
@@ -84,34 +79,42 @@ namespace SSStuartCallouts.Callouts
                 "g_m_y_strpunk_02"
             };
 
-            AttackersVehicle = new Vehicle(attackersVehicleList[RandomNumber(0, attackersVehicleList.Count)], SpawnPoint.Around(10f), RandomNumber(-180, 180));
-            AttackersVehicle.IsPersistent = true;
+            AttackersVehicle = new Vehicle(attackersVehicleList[MathHelper.GetRandomInteger(attackersVehicleList.Count)], SpawnPoint.Around(10f), MathHelper.GetRandomInteger(-180, 180))
+            {
+                IsPersistent = true
+            };
 
-            AttackerOne = new Ped(attackersPedList[RandomNumber(0, attackersPedList.Count)], AttackersVehicle.GetOffsetPositionRight(3f), 0);
-            AttackerOne.IsPersistent = true;
-            AttackerOne.BlockPermanentEvents = true;
-            AttackerOne.WarpIntoVehicle(AttackersVehicle, -1);
+            AttackerOne = new Ped(attackersPedList[MathHelper.GetRandomInteger(attackersPedList.Count)], AttackersVehicle.GetOffsetPositionRight(3f), 0)
+            {
+                IsPersistent = true,
+                BlockPermanentEvents = true,
+                RelationshipGroup = "ATTACKERS"
+            };
             AttackerOne.Inventory.GiveNewWeapon("weapon_assaultrifle", 500, true);
-            AttackerOne.RelationshipGroup = "ATTACKERS";
+            AttackerOne.WarpIntoVehicle(AttackersVehicle, -1);
 
-            AttackerTwo = new Ped(attackersPedList[RandomNumber(0, attackersPedList.Count)], AttackersVehicle.GetOffsetPositionRight(3f), 0);
-            AttackerTwo.IsPersistent = true;
-            AttackerTwo.BlockPermanentEvents = true;
-            AttackerTwo.WarpIntoVehicle(AttackersVehicle, 0);
+            AttackerTwo = new Ped(attackersPedList[MathHelper.GetRandomInteger(attackersPedList.Count)], AttackersVehicle.GetOffsetPositionRight(3f), 0)
+            {
+                IsPersistent = true,
+                BlockPermanentEvents = true,
+                RelationshipGroup = "ATTACKERS"
+            };
             AttackerTwo.Inventory.GiveNewWeapon("weapon_heavyshotgun", 500, true);
-            AttackerTwo.RelationshipGroup = "ATTACKERS";
+            AttackerTwo.WarpIntoVehicle(AttackersVehicle, 0);
 
             if (CalloutType == 0)
             {
-                if (RandomNumber(0, 2) == 0)
-                    TransportVehicle = new Vehicle("policet", SpawnPoint, RandomNumber(-180, 180));
+                if (MathHelper.GetRandomInteger(2) == 0)
+                    TransportVehicle = new Vehicle("policet", SpawnPoint, MathHelper.GetRandomInteger(-180, 180));
                 else
-                    TransportVehicle = new Vehicle("pbus", SpawnPoint, RandomNumber(-180, 180));
-            } else {
-                if (RandomNumber(0, 2) == 0)
-                    TransportVehicle = new Vehicle("stockade", SpawnPoint, RandomNumber(-180, 180));
+                    TransportVehicle = new Vehicle("pbus", SpawnPoint, MathHelper.GetRandomInteger(-180, 180));
+            }
+            else
+            {
+                if (MathHelper.GetRandomInteger(2) == 0)
+                    TransportVehicle = new Vehicle("stockade", SpawnPoint, MathHelper.GetRandomInteger(-180, 180));
                 else
-                    TransportVehicle = new Vehicle("boxville2", SpawnPoint, RandomNumber(-180, 180));
+                    TransportVehicle = new Vehicle("boxville2", SpawnPoint, MathHelper.GetRandomInteger(-180, 180));
             }
             TransportVehicle.IsPersistent = true;
             TransportVehicle.IndicatorLightsStatus = VehicleIndicatorLightsStatus.Both;
@@ -164,13 +167,29 @@ namespace SSStuartCallouts.Callouts
 
                 EventCreated = true;
             }
+            if (!PursuitCreated && Game.LocalPlayer.Character.DistanceTo(AttackersVehicle) < 50)
+            {
+                Pursuit = Functions.CreatePursuit();
+                Functions.AddPedToPursuit(Pursuit, AttackerOne);
+                Functions.SetPursuitDisableAIForPed(AttackerOne, true);
+                Functions.AddPedToPursuit(Pursuit, AttackerTwo);
+                Functions.SetPursuitDisableAIForPed(AttackerTwo, true);
+                Functions.SetPursuitIsActiveForPlayer(Pursuit, true);
+                EventBlip.DisableRoute();
+
+                PursuitCreated = true;
+            }
             if (EventCreated && !TransportVehicleUnlocked && TransportDriver.Exists())
                 if (TransportDriver.IsDead)
                 {
                     Game.LogTrivial($"[{pluginName}] Driver Dead -> Unlocking the vehicle");
                     TransportVehicle.LockStatus = VehicleLockStatus.Unlocked;
                     TransportVehicleUnlocked = true;
+                    GameFiber.StartNew(delegate
+                    {
                     TransportPassenger.Tasks.LeaveVehicle(LeaveVehicleFlags.LeaveDoorOpen).WaitForCompletion(5000);
+                        Functions.AddPedToPursuit(Pursuit, TransportPassenger);
+                        Functions.SetPursuitDisableAIForPed(TransportPassenger, true);
                     if (CalloutType == 0)
                     {
                         if (AttackersVehicle.DistanceTo(TransportVehicle) < 50f)
@@ -181,6 +200,11 @@ namespace SSStuartCallouts.Callouts
                     }
                     else
                         TransportPassenger.Tasks.ReactAndFlee(AttackerOne);
+
+                        Functions.SetPursuitDisableAIForPed(AttackerOne, false);
+                        Functions.SetPursuitDisableAIForPed(AttackerTwo, false);
+                        Functions.SetPursuitDisableAIForPed(TransportPassenger, false);
+                    });
                 }
 
             if (EventCreated && !PursuitCreated 
@@ -204,17 +228,12 @@ namespace SSStuartCallouts.Callouts
 
                 GameFiber.Wait(2000);
 
-                Pursuit = Functions.CreatePursuit();
-                Functions.AddPedToPursuit(Pursuit, AttackerOne);
-                Functions.AddPedToPursuit(Pursuit, AttackerTwo);
                 if (CalloutType == 0)
                     Functions.AddPedToPursuit(Pursuit, TransportPassenger);
-                Functions.SetPursuitIsActiveForPlayer(Pursuit, true);
                 Functions.RequestBackup(AttackerOne.Position, LSPD_First_Response.EBackupResponseType.Pursuit, LSPD_First_Response.EBackupUnitType.AirUnit);
                 EventBlip.Delete();
                 
                 DriverOutOfTransport = true;
-                PursuitCreated = true;
             }
 
             bool AttackersDeadOrArrested = (AttackerOne.Exists() && (Functions.IsPedArrested(AttackerOne) || AttackerOne.IsDead))
@@ -234,6 +253,9 @@ namespace SSStuartCallouts.Callouts
         public override void End()
         {
             base.End();
+
+            if (Pursuit != null && Functions.IsPursuitStillRunning(Pursuit))
+                Functions.ForceEndPursuit(Pursuit);
 
             if (EventBlip.Exists()) EventBlip.Delete();
             if (AttackersVehicle.Exists()) AttackersVehicle.Dismiss();
