@@ -19,15 +19,15 @@ namespace SSStuartCallouts.Callouts
         private Ped Saboteur;
         public static Vehicle CrashedTrain, TrainCarriage1, TrainCarriage2, TrainCarriage3_Tanker;
         private List<Flatbed> Flatbeds = new List<Flatbed>();
-        private uint FlatbedTimeout = 0;
         private List<bool> VehicleMarkedFlatbed = new List<bool>() { false, false, false, false };
         private Rage.Object Obstacle1, Obstacle2, Obstacle3, Obstacle4;
         private Blip CrashedTrainBlip;
         private Blip DriverBlip;
         private Blip investigationBlip;
         private Vector3 SpawnPoint;
-        private Vector3 DriverSpawnPosition;
+        private Checklist checklist = new Checklist();
         private LHandle Pursuit;
+        private int taskDriver, taskFire, taskFlatbed;
         private bool EventCreated;
         private bool LogicExplosionDriver;
         private bool LogicOnScene;
@@ -35,7 +35,6 @@ namespace SSStuartCallouts.Callouts
         private bool LogicDriverDone;
         private bool LogicFireDone;
         private bool LogicInvestiSetup;
-        private bool Sabotage;
         private bool PursuitCreated;
         private CalloutVariante CalloutVersion;
 
@@ -45,16 +44,9 @@ namespace SSStuartCallouts.Callouts
             SanChiaski
         }
 
-        public int RandomNumber(int minIncluded, int maxIncluded)
-        {
-            int random = new Random().Next(minIncluded, maxIncluded + 1);
-            return random;
-        }
-
-
         public override bool OnBeforeCalloutDisplayed()
         {
-            switch (RandomNumber(0,1))
+            switch (MathHelper.GetRandomInteger(2))
             {
                 case 1:
                     Game.LogTrivial($"[{pluginName}] RNG = 1");
@@ -77,6 +69,7 @@ namespace SSStuartCallouts.Callouts
             ShowCalloutAreaBlipBeforeAccepting(SpawnPoint, 30f);
             AddMinimumDistanceCheck(300f, SpawnPoint);
             CalloutMessage = "Train Derailment";
+            CalloutPosition = SpawnPoint;
             Functions.PlayScannerAudioUsingPosition("WE_HAVE VEHICLE_CATEGORY_TRAIN_01 CRIME_MOTOR_VEHICLE_ACCIDENT_01 IN_OR_ON_POSITION", SpawnPoint);
 
             return base.OnBeforeCalloutDisplayed();
@@ -84,9 +77,13 @@ namespace SSStuartCallouts.Callouts
 
         public override bool OnCalloutAccepted()
         {
+            taskDriver = checklist.AddTask("Take care of the driver");
+            taskFire = checklist.AddTask("Take care of the fire");
             switch (CalloutVersion)
             {
                 case CalloutVariante.Windfarm:
+                    taskFlatbed = checklist.AddTask("Take care of the train carriages");
+
                     CrashedTrain = new Vehicle("freight", SpawnPoint, 45f);
                     TrainCarriage1 = new Vehicle("freightcont1", new Vector3(2078.5f, 1554.4f, 77.3f), 38.3f);
                     TrainCarriage2 = new Vehicle("freightgrain", new Vector3(2083.9f, 1539.4f, 77.7f), 0f);
@@ -145,7 +142,7 @@ namespace SSStuartCallouts.Callouts
             Driver.IsPersistent = true;
             Driver.BlockPermanentEvents = true;
             Driver.WarpIntoVehicle(CrashedTrain, -1);
-            Driver.Health = RandomNumber(50, 200);
+            Driver.Health = MathHelper.GetRandomInteger(50, 200);
 
             CrashedTrainBlip = new Blip(SpawnPoint)
             {
@@ -167,6 +164,11 @@ namespace SSStuartCallouts.Callouts
         {
             base.Process();
 
+            if (Game.LocalPlayer.Character.LastVehicle != null && Game.LocalPlayer.Character.LastVehicle.Exists() && Game.LocalPlayer.Character.DistanceTo(Game.LocalPlayer.Character.LastVehicle) < 5)
+            {
+                checklist.Display();
+            }
+
             if (!EventCreated && Game.LocalPlayer.Character.DistanceTo(SpawnPoint) < 300f)
             {
                 CrashedTrain.EngineHealth = 0;
@@ -184,10 +186,10 @@ namespace SSStuartCallouts.Callouts
 
             if (EventCreated && !LogicExplosionDriver && Game.LocalPlayer.Character.DistanceTo(SpawnPoint) < 150f)
             {
-                if (RandomNumber(0, 3) == 1)
-                    World.SpawnExplosion(TrainCarriage3_Tanker.Position, 5, RandomNumber(10,20), true, false, 1f);
+                if (MathHelper.GetRandomInteger(3) == 1)
+                    World.SpawnExplosion(TrainCarriage3_Tanker.Position, 5, MathHelper.GetRandomInteger(10, 20), true, false, 1f);
                 for (int fireBit = 0; fireBit < 20; fireBit++)
-                    NativeFunction.Natives.StartScriptFire((float)(TrainCarriage3_Tanker.Position.X - 5 + (fireBit * 0.5)), (float)(TrainCarriage3_Tanker.Position.Y + RandomNumber(-1, 1)), World.GetGroundZ(TrainCarriage3_Tanker.Position, false, false), 5, true);
+                    NativeFunction.Natives.StartScriptFire((float)(TrainCarriage3_Tanker.Position.X - 5 + (fireBit * 0.5)), (float)(TrainCarriage3_Tanker.Position.Y + MathHelper.GetRandomSingle(-1, 1)), World.GetGroundZ(TrainCarriage3_Tanker.Position, false, false), 5, true);
 
                 if (Driver.IsAlive)
                 {
@@ -200,12 +202,12 @@ namespace SSStuartCallouts.Callouts
                             DriverSpawnPosition = new Vector3(2933.23f, 4618.34f, 48.70f);
                             Driver.Position = DriverSpawnPosition;
                             Driver.Heading = 127;
+                            NativeFunction.Natives.TASK_START_SCENARIO_IN_PLACE(Driver, "WORLD_HUMAN_STUPOR_CLUBHOUSE", -1, false);
                             break;
                         default:
 
                             break;
                     }
-                    NativeFunction.Natives.TASK_START_SCENARIO_IN_PLACE(Driver, "WORLD_HUMAN_STUPOR_CLUBHOUSE", -1, false);
                 }
 
                 LogicExplosionDriver = true;
@@ -213,7 +215,8 @@ namespace SSStuartCallouts.Callouts
 
             if (EventCreated && !LogicOnScene && Game.LocalPlayer.Character.DistanceTo(SpawnPoint) < 20f)
             {
-                Game.DisplayHelp("Check the driver");
+                checklist.Enable();
+                Game.DisplayHelp("Check the ~o~driver~w~");
 
                 CrashedTrainBlip.Delete();
                 
@@ -226,7 +229,6 @@ namespace SSStuartCallouts.Callouts
                 if(Driver.IsInAnyVehicle(false))
                     Driver.Tasks.LeaveVehicle(LeaveVehicleFlags.BailOut);
                 GameFiber.Wait(5000);
-                Game.DisplayHelp("Press ~b~End~w~ to end the callout.");
 
                 LogicOnScene = true;
             }
@@ -240,12 +242,11 @@ namespace SSStuartCallouts.Callouts
 
                 LogicInspectedDriver = true;
             }
-            if (EventCreated && LogicInspectedDriver && !LogicInvestiSetup && (!Driver.Exists() || Driver.DistanceTo(DriverSpawnPosition) > 30f))
+            if (EventCreated && LogicInspectedDriver && !LogicInvestiSetup && !LogicDriverDone && (!Driver.Exists() || Driver.DistanceTo(DriverSpawnPosition) > 30f))
             {
+                checklist.UpdateTaskStatus(taskDriver, true);
                 if (CalloutVersion == CalloutVariante.SanChiaski)
-                    Game.DisplayHelp("Press ~b~Enter~w~ to start the investigation.");
-                else if (CalloutVersion == CalloutVariante.Windfarm)
-                    Game.DisplayHelp("Press ~b~End~w~ to end the callout.");
+                    checklist.AddTask("Investigate the tracks", true);
 
                 LogicDriverDone = true;
             }
@@ -257,10 +258,17 @@ namespace SSStuartCallouts.Callouts
                     Game.DisplayHelp("Press ~b~E~w~ to call a flatbed for this carriage.");
                     if (Game.IsKeyDown(Keys.E))
                     {
+                        if (CrashedTrain.HasDriver)
+                        {
+                            Game.DisplaySubtitle("Cannot recover the locomotive while the ~o~driver~w~ is inside");
+                        }
+                        else
+                        {
                         Flatbed truck = new Flatbed(0);
                         Flatbeds.Add(truck);
                         VehicleMarkedFlatbed[0] = true;
                     }
+                }
                 }
                 if (TrainCarriage1 != null && TrainCarriage1.Exists() && Game.LocalPlayer.Character.DistanceTo(TrainCarriage1) < 8f && !VehicleMarkedFlatbed[1])
                 {
@@ -292,39 +300,48 @@ namespace SSStuartCallouts.Callouts
                         VehicleMarkedFlatbed[3] = true;
                     }
                 }
+
+                if (VehicleMarkedFlatbed[0] && VehicleMarkedFlatbed[1] && VehicleMarkedFlatbed[2] && VehicleMarkedFlatbed[3])
+                    checklist.UpdateTaskStatus(taskFlatbed, true);
             }
-            if (EventCreated && LogicDriverDone && Game.IsKeyDown(Keys.Enter))
+            if (LogicExplosionDriver && !LogicFireDone && World.NumberOfFires == 0)
+            {
+                checklist.UpdateTaskStatus(taskFire, true);
                 LogicFireDone = true;
+            }
             if (EventCreated && LogicDriverDone && LogicFireDone && !LogicInvestiSetup && CalloutVersion == CalloutVariante.SanChiaski)
             {
-                Sabotage = RandomNumber(0, 1) == 0;
-
-                investigationBlip = new Blip(new Vector3(2997.234f, 4059.654f, 55.84571f), 50f);
-                investigationBlip.Color = Main.calloutWaypointColor;
-                investigationBlip.Alpha = 0.3f;
-                investigationBlip.IsRouteEnabled = true;
-
-                if (Sabotage)
+                investigationBlip = new Blip(new Vector3(2997.234f, 4059.654f, 55.84571f), 50f)
                 {
-                    Saboteur = new Ped(new Vector3(2986.937f, 4070.471f, 56.2295f), 80f);
-                    Saboteur.IsPersistent = true;
-                    Saboteur.BlockPermanentEvents = true;
-                }
+                    Color = Main.calloutWaypointColor,
+                    Alpha = 0.3f,
+                    IsRouteEnabled = true
+                };
+                Game.DisplaySubtitle("Go back ~y~up the track~w~ to investigate.");
+
+                Saboteur = new Ped(new Vector3(2986.937f, 4070.471f, 56.2295f), 80f)
+                {
+                    IsPersistent = true,
+                    BlockPermanentEvents = true
+                };
+                Saboteur.Tasks.PlayAnimation("missheistdockssetup1ig_3@base", "welding_base_dockworker", 1, AnimationFlags.Loop);
+
                 LogicInvestiSetup = true;
             }
-            if (LogicInvestiSetup && Game.LocalPlayer.Character.DistanceTo(new Vector3(2997.234f, 4059.654f, 55.84571f)) < 40f)
+            if (LogicInvestiSetup && !PursuitCreated && Game.LocalPlayer.Character.DistanceTo(new Vector3(2997.234f, 4059.654f, 55.84571f)) < 40f)
             {
-                if (Sabotage && !PursuitCreated)
-                {
+                checklist.Disable();
+                if (investigationBlip.Exists())
+                    investigationBlip.Delete();
                     Saboteur.IsPersistent = false;
                     Saboteur.BlockPermanentEvents = false;
+                Saboteur.Tasks.Clear();
                     Pursuit = Functions.CreatePursuit();
                     Functions.AddPedToPursuit(Pursuit, Saboteur);
                     Functions.SetPursuitIsActiveForPlayer(Pursuit, true);
                     PursuitCreated = true;
                     CalloutInterfaceAPI.Functions.SendMessage(this, "A suspect was spotted near railway infrastructure and is fleeing. Pursuit has begun");
                 }
-            }
             if (PursuitCreated && !Functions.IsPursuitStillRunning(Pursuit) || (Saboteur.Exists() && !Saboteur.IsAlive))
             {
                 End();
@@ -340,10 +357,21 @@ namespace SSStuartCallouts.Callouts
         {
             base.End();
 
+            if (Pursuit != null && Functions.IsPursuitStillRunning(Pursuit))
+                Functions.ForceEndPursuit(Pursuit);
+
             if (TrainCarriage3_Tanker != null && TrainCarriage3_Tanker.Exists())
             {
                 NativeFunction.Natives.StopFireInRange(TrainCarriage3_Tanker.Position.X, TrainCarriage3_Tanker.Position.Y, TrainCarriage3_Tanker.Position.Z, 30f);
             }
+
+            if (CrashedTrainBlip.Exists()) CrashedTrainBlip.Delete();
+            if (DriverBlip.Exists()) DriverBlip.Delete();
+            if (Driver.Exists()) Driver.Dismiss();
+            if (investigationBlip.Exists()) investigationBlip.Delete();
+            if (Saboteur.Exists()) Saboteur.Dismiss();
+            foreach (Flatbed flatbed in Flatbeds)
+                flatbed?.Remove();
 
             int counter = 0;
             Game.LogTrivial($"[{pluginName}] 'Train derailment' callout ending in 30 sec.");
@@ -353,9 +381,6 @@ namespace SSStuartCallouts.Callouts
                 counter++;
             }
 
-            if (CrashedTrainBlip.Exists()) CrashedTrainBlip.Delete();
-            if (DriverBlip.Exists()) DriverBlip.Delete();
-            if (Driver.Exists()) Driver.Delete();
             if (CrashedTrain.Exists()) CrashedTrain.Delete();
             if (TrainCarriage1.Exists()) TrainCarriage1.Delete();
             if (TrainCarriage2.Exists()) TrainCarriage2.Delete();
@@ -364,12 +389,6 @@ namespace SSStuartCallouts.Callouts
             if (Obstacle2.Exists()) Obstacle2.Delete();
             if (Obstacle3.Exists()) Obstacle3.Delete();
             if (Obstacle4.Exists()) Obstacle4.Delete();
-            if (investigationBlip.Exists()) investigationBlip.Delete();
-            if (Saboteur.Exists()) Saboteur.Dismiss();
-            foreach (Flatbed flatbed in Flatbeds)
-            {
-                flatbed?.Remove();
-            }
 
             NativeFunction.Natives.SWITCH_TRAIN_TRACK(0, true);
 
@@ -390,23 +409,23 @@ namespace SSStuartCallouts.Callouts
         {
             new List<Vector3>
             {
-                new Vector3(2245.497f, 1217.362f, 76.6133f),    // Truck
-                new Vector3(2255.9f, 1207.313f, 77.869f)        // Trailer
+                new Vector3(2242.497f, 1217.362f, 76.6133f),    // Truck
+                new Vector3(2252.9f, 1207.313f, 77.869f)        // Trailer
             },
             new List<Vector3>
             {
-                new Vector3(2263.621f, 1194.953f, 76.433f),     // Truck
-                new Vector3(2273.769f, 1184.249f, 76.545f)      // Trailer
+                new Vector3(2260.621f, 1194.953f, 76.433f),     // Truck
+                new Vector3(2270.769f, 1184.249f, 76.545f)      // Trailer
             },
             new List<Vector3>
             {
-                new Vector3(2282.73f, 1173.379f, 76.868f),      // Truck
-                new Vector3(2292.343f, 1163.389f, 77.76163f)    // Trailer
+                new Vector3(2279.73f, 1173.379f, 76.868f),      // Truck
+                new Vector3(2289.343f, 1163.389f, 77.76163f)    // Trailer
             },
             new List<Vector3>
             {
-                new Vector3(2303.992f, 1149.404f, 78.43932f),      // Truck
-                new Vector3(2315.508f, 1136.22f, 79.44845f)    // Trailer
+                new Vector3(2300.992f, 1149.404f, 78.43932f),   // Truck
+                new Vector3(2312.508f, 1136.22f, 79.44845f)     // Trailer
             }
         };
         private static List<List<Vector3>> drivePos = new List<List<Vector3>>()
@@ -487,25 +506,25 @@ namespace SSStuartCallouts.Callouts
                 GameFiber.Sleep(1000);
                 closestVehicleFront = World.GetClosestEntity(truck.GetOffsetPositionFront(10f), 8f, GetEntitiesFlags.ConsiderGroundVehicles | GetEntitiesFlags.ExcludePlayerVehicle);
             }
+            Game.DisplayNotification("dia_police", "dia_police", "Dispatch", "", "Sending a flatbed truck to pick up " + (target == 0 ? "the locomotive" : "a wagon"));
 
             GameFiber.StartNew(delegate
             {
-                Game.LogTrivial("Flatbed : Task : Drive near scene...");
                 driver.Tasks.DriveToPosition(drivePos[targetIndex][0], 50, VehicleDrivingFlags.FollowTraffic, 15f).WaitForCompletion(60000);
-                Game.LogTrivial("Flatbed : Task : Drive close to train...");
-                driver.Tasks.DriveToPosition(drivePos[targetIndex][1], 10, VehicleDrivingFlags.DriveAroundPeds | VehicleDrivingFlags.DriveAroundVehicles | VehicleDrivingFlags.IgnorePathFinding | VehicleDrivingFlags.DriveBySight, 10f).WaitForCompletion(60000);
-                Game.LogTrivial("Flatbed : Task : Drive & stop close target...");
-                driver.Tasks.DriveToPosition(drivePos[targetIndex][2], 10, VehicleDrivingFlags.DriveAroundPeds | VehicleDrivingFlags.DriveAroundVehicles | VehicleDrivingFlags.IgnorePathFinding, 5f).WaitForCompletion(20000);
+                if (driver == null || !driver.Exists()) return;
+                driver.Tasks.DriveToPosition(drivePos[targetIndex][1], 5, VehicleDrivingFlags.DriveAroundPeds | VehicleDrivingFlags.DriveAroundVehicles | VehicleDrivingFlags.IgnorePathFinding | VehicleDrivingFlags.DriveBySight, 10f).WaitForCompletion(60000);
+                if (driver == null || !driver.Exists()) return;
+                driver.Tasks.DriveToPosition(drivePos[targetIndex][2], 5, VehicleDrivingFlags.DriveAroundPeds | VehicleDrivingFlags.DriveAroundVehicles | VehicleDrivingFlags.IgnorePathFinding, 5f).WaitForCompletion(20000);
+                if (driver == null || !driver.Exists()) return;
                 driver.Tasks.PerformDrivingManeuver(VehicleManeuver.Wait).WaitForCompletion(5000);
-                Game.LogTrivial("Flatbed : Waiting 10s...");
                 GameFiber.Wait(10000);
-                Game.LogTrivial("Flatbed : Attaching train, waiting 5s...");
                 trainTarget.AttachTo(trailer, 0, new Vector3(0, -0.5f, (targetIndex == 0 ? 0 : -0.7f)), new Rotator(0, 0, 0));
                 if (blip != null && blip.Exists())
                     blip.Delete();
                 GameFiber.Wait(5000);
-                Game.LogTrivial("Flatbed : Task : Drive back to road...");
-                driver.Tasks.DriveToPosition(drivePos[targetIndex][3], 30, VehicleDrivingFlags.DriveAroundPeds | VehicleDrivingFlags.DriveAroundVehicles | VehicleDrivingFlags.IgnorePathFinding, 20f).WaitForCompletion(30000);
+                if (driver == null || !driver.Exists()) return;
+                driver.Tasks.DriveToPosition(drivePos[targetIndex][3], 10, VehicleDrivingFlags.DriveAroundPeds | VehicleDrivingFlags.DriveAroundVehicles | VehicleDrivingFlags.IgnorePathFinding, 20f).WaitForCompletion(30000);
+                if (driver == null || !driver.Exists()) return;
                 driver.Tasks.CruiseWithVehicle(40f);
                 GameFiber.Wait(60000);
                 Remove();
